@@ -50,6 +50,7 @@ final_test/
 *.swp
 *.swo
 *~
+.claude/
 
 # Testing
 .pytest_cache/
