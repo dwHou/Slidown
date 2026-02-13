@@ -117,7 +117,7 @@ case $REPLY in
         fi
         echo ""
         echo -e "${YELLOW}上传到正式 PyPI...${NC}"
-        twine upload --repository pypi dist/*
+        twine upload --repository pypi dist/* --verbose
         echo ""
         echo -e "${GREEN}✓ 已上传到正式 PyPI${NC}"
         echo -e "查看: ${YELLOW}https://pypi.org/project/slidown/${VERSION}/${NC}"
