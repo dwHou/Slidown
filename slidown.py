@@ -803,45 +803,63 @@ class HTMLPresentationRenderer:
 
         return chapters
 
-    def _generate_chapter_nav(self, chapters: Dict[str, Any]) -> str:
-        """Generate hierarchical chapter navigation HTML (H1 + H2)"""
-        if not chapters or (not chapters.get('h1') and not chapters.get('h2')):
+    def _generate_chapter_nav(self, chapters: List[Dict[str, Any]]) -> str:
+        """Generate single-tier flattened chapter navigation HTML and TOC panel"""
+        if not chapters:
             return ''
 
-        h1_chapters = chapters.get('h1', [])
-        h2_chapters = chapters.get('h2', [])
+        # Generate progress bar navigation (truncated titles)
+        nav_items = []
+        for chapter in chapters:
+            title = html.escape(chapter['title'])
+            # Truncate long titles for progress bar
+            display_title = title[:17] + '...' if len(title) > 20 else title
 
-        nav_html = []
+            nav_items.append(
+                f'        <span class="chapter" data-level="{chapter["level"]}" data-slide="{chapter["slide_number"]}">{display_title}</span>'
+            )
 
-        # Generate H1 navigation (always visible)
-        if h1_chapters:
-            h1_items = []
-            for chapter in h1_chapters:
-                title = html.escape(chapter['title'])
-                # Truncate long titles
-                if len(title) > 20:
-                    title = title[:17] + '...'
+        nav_html = '\n        <span class="separator">|</span>\n'.join(nav_items)
 
-                h1_items.append(
-                    f'        <span class="chapter" data-level="1" data-slide="{chapter["slide_number"]}">{title}</span>'
-                )
+        # Generate TOC panel (full titles with hierarchy)
+        toc_items = []
+        for chapter in chapters:
+            title = html.escape(chapter['title'])
+            level = chapter['level']
 
-            h1_html = '\n        <span class="separator">|</span>\n'.join(h1_items)
+            toc_items.append(
+                f'        <div class="toc-item" data-level="{level}" data-slide="{chapter["slide_number"]}">\n'
+                f'            <span class="toc-title">{title}</span>\n'
+                f'        </div>'
+            )
 
-            nav_html.append(f'''    <!-- H1 Chapter navigation -->
-    <div class="chapter-nav chapter-nav-h1">
-{h1_html}
+        toc_content = '\n'.join(toc_items)
+
+        return f'''    <!-- TOC Icon -->
+    <div class="toc-icon" id="tocIcon" title="目录">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
     </div>
-''')
 
-        # Generate H2 navigation placeholder (dynamically populated by JS)
-        if h2_chapters:
-            nav_html.append('''    <!-- H2 Chapter navigation (dynamic) -->
-    <div class="chapter-nav chapter-nav-h2">
+    <!-- TOC Panel -->
+    <div class="toc-panel" id="tocPanel">
+        <div class="toc-header">
+            <h3>目录</h3>
+            <button class="toc-close" id="tocClose">×</button>
+        </div>
+        <div class="toc-content">
+{toc_content}
+        </div>
     </div>
-''')
 
-        return '\n'.join(nav_html)
+    <!-- Chapter navigation (progress bar) -->
+    <div class="chapter-nav">
+{nav_html}
+    </div>
+'''
 
     def _generate_slides(self, slides: List[Dict[str, Any]]) -> str:
         """Generate HTML for all slides"""
@@ -1170,13 +1188,16 @@ class HTMLPresentationRenderer:
             transition: width 0.3s ease;
         }
 
-        /* Footer - left bottom corner, no background */
+        /* Footer - centered bottom, semi-transparent */
         .footer-text {
             position: fixed;
-            bottom: 15px;
-            left: 20px;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
             font-size: 0.85rem;
-            color: rgba(136, 136, 136, 0.7);
+            color: rgba(136, 136, 136, 0.5);
+            opacity: 0.5;
             z-index: 50;
             pointer-events: none;
         }
@@ -1294,144 +1315,278 @@ class HTMLPresentationRenderer:
             }
         }
 
-        /* H1 Chapter navigation (always visible) */
-        .chapter-nav-h1 {
+        /* Single-tier chapter navigation (flattened) */
+        .chapter-nav {
             position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 10px 20px;
-            background: rgba(18, 18, 26, 0.9);
-            border: 1px solid var(--cyan);
-            border-radius: 8px;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            text-align: center;
             z-index: 100;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            padding: 10px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
         }
 
-        .chapter-nav-h1 .chapter {
+        .chapter-nav::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .chapter-nav::-webkit-scrollbar-thumb {
+            background: rgba(0, 217, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .chapter-nav .chapter {
             cursor: pointer;
-            padding: 8px 16px;
-            font-size: 1rem;
-            font-weight: 500;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            font-weight: 400;
             color: #888;
             transition: all 0.3s ease;
             border-radius: 4px;
             white-space: nowrap;
+            display: inline-block;
         }
 
-        .chapter-nav-h1 .chapter:hover {
+        .chapter-nav .chapter:hover {
             color: var(--cyan);
-            background: var(--bg-tertiary);
             text-shadow: 0 0 10px var(--cyan);
         }
 
-        .chapter-nav-h1 .chapter.active {
+        .chapter-nav .chapter.active {
             color: #00D9FF;
-            font-weight: 700;
-            background: var(--bg-tertiary);
+            font-weight: 600;
             border-bottom: 2px solid #00D9FF;
             text-shadow: 0 0 15px var(--cyan);
         }
 
-        .chapter-nav-h1 .separator {
-            color: #444;
-            font-size: 0.9rem;
-            padding: 0 8px;
+        .chapter-nav .chapter[data-level="1"] {
+            font-weight: 500;
         }
 
-        /* H2 Chapter navigation (dynamic, below H1) */
-        .chapter-nav-h2 {
+        .chapter-nav .chapter[data-level="2"] {
+            font-size: 0.85rem;
+        }
+
+        .chapter-nav .chapter[data-level="3"] {
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .chapter-nav .separator {
+            color: #444;
+            padding: 0 8px;
+            display: inline-block;
+        }
+
+        /* TOC Icon */
+        .toc-icon {
             position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(18, 18, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 5px 20px;
-            z-index: 95;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            transition: all 0.3s ease;
+            color: #888;
         }
 
-        .chapter-nav-h2 .chapter {
+        .toc-icon:hover {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--cyan);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* TOC Panel */
+        .toc-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 80vh;
+            background: rgba(18, 18, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 217, 255, 0.2);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toc-panel.active {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .toc-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--cyan);
+            font-weight: 600;
+            text-shadow: 0 0 10px var(--cyan);
+        }
+
+        .toc-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.8rem;
+            line-height: 1;
             cursor: pointer;
-            padding: 4px 10px;
-            font-size: 0.75rem;
-            font-weight: 300;
-            transition: all 0.3s ease;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .toc-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .toc-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .toc-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .toc-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 217, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #aaa;
+            border-left: 3px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-left-color: var(--cyan);
+            color: #fff;
+        }
+
+        .toc-item.active {
+            background: rgba(0, 217, 255, 0.15);
+            border-left-color: var(--cyan);
+            color: var(--cyan);
+            text-shadow: 0 0 10px var(--cyan);
+        }
+
+        .toc-item[data-level="1"] {
+            padding-left: 20px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .toc-item[data-level="2"] {
+            padding-left: 40px;
+            font-size: 0.85rem;
+        }
+
+        .toc-item[data-level="3"] {
+            padding-left: 60px;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .toc-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .chapter-nav-h2 .chapter.active {
-            color: #00FFFF;
-            opacity: 1.0;
-            font-weight: 500;
-            border-bottom: 1px solid #00FFFF;
-        }
-
-        .chapter-nav-h2 .chapter.fade-1 {
-            opacity: 0.6;
-            color: #666;
-        }
-
-        .chapter-nav-h2 .chapter.fade-2 {
-            opacity: 0.3;
-            color: #555;
-        }
-
-        .chapter-nav-h2 .separator {
-            color: #333;
-            padding: 0 4px;
-            font-size: 0.7rem;
-        }
-
         @media (max-width: 1024px) {
-            .chapter-nav-h1 {
-                bottom: 70px;
+            .chapter-nav {
+                bottom: 45px;
                 padding: 8px 16px;
-                max-width: 90%;
-                overflow-x: auto;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.85rem;
-                padding: 6px 12px;
+                padding: 5px 10px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
+            .toc-panel {
+                width: 280px;
             }
         }
 
         @media (max-width: 768px) {
-            .chapter-nav-h1 {
-                bottom: 50px;
+            .chapter-nav {
+                bottom: 40px;
                 padding: 6px 12px;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
-            }
-
             .footer-text {
                 font-size: 0.7rem;
-                bottom: 10px;
-                left: 10px;
             }
 
             .page-number {
                 font-size: 0.8rem;
                 bottom: 10px;
                 right: 10px;
+            }
+
+            .toc-panel {
+                width: calc(100vw - 40px);
+                left: 20px;
+                right: 20px;
+            }
+
+            .toc-icon {
+                width: 40px;
+                height: 40px;
             }
         }'''
 
@@ -1679,13 +1834,16 @@ class HTMLPresentationRenderer:
             transition: width 0.3s ease;
         }
 
-        /* Footer - left bottom corner, no background */
+        /* Footer - centered bottom, semi-transparent */
         .footer-text {
             position: fixed;
-            bottom: 15px;
-            left: 20px;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
             font-size: 0.85rem;
-            color: rgba(108, 117, 125, 0.7);
+            color: rgba(108, 117, 125, 0.5);
+            opacity: 0.5;
             z-index: 50;
             pointer-events: none;
         }
@@ -1762,96 +1920,229 @@ class HTMLPresentationRenderer:
             border-color: var(--primary);
         }
 
-        /* H1 Chapter navigation */
-        .chapter-nav-h1 {
+        /* Single-tier chapter navigation (flattened) */
+        .chapter-nav {
             position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 12px 24px;
-            background: white;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            text-align: center;
             z-index: 100;
-            box-shadow: 0 4px 12px var(--shadow-medium);
+            padding: 10px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
         }
 
-        .chapter-nav-h1 .chapter {
+        .chapter-nav::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .chapter-nav::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 2px;
+        }
+
+        .chapter-nav .chapter {
             cursor: pointer;
-            padding: 8px 16px;
-            font-size: 1rem;
-            font-weight: 500;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            font-weight: 400;
             color: #888;
             transition: all 0.3s ease;
             border-radius: 4px;
             white-space: nowrap;
+            display: inline-block;
         }
 
-        .chapter-nav-h1 .chapter:hover {
+        .chapter-nav .chapter:hover {
             color: var(--primary);
             background: var(--bg-secondary);
         }
 
-        .chapter-nav-h1 .chapter.active {
+        .chapter-nav .chapter.active {
             color: #0066cc;
-            font-weight: 700;
+            font-weight: 600;
             background: var(--bg-secondary);
             border-bottom: 2px solid #0066cc;
         }
 
-        .chapter-nav-h1 .separator {
-            color: #444;
-            font-size: 0.9rem;
-            padding: 0 8px;
+        .chapter-nav .chapter[data-level="1"] {
+            font-weight: 500;
         }
 
-        /* H2 Chapter navigation */
-        .chapter-nav-h2 {
+        .chapter-nav .chapter[data-level="2"] {
+            font-size: 0.85rem;
+        }
+
+        .chapter-nav .chapter[data-level="3"] {
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .chapter-nav .separator {
+            color: #444;
+            padding: 0 8px;
+            display: inline-block;
+        }
+
+        /* TOC Icon */
+        .toc-icon {
             position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 5px 20px;
-            z-index: 95;
-        }
-
-        .chapter-nav-h2 .chapter {
+            justify-content: center;
             cursor: pointer;
-            padding: 4px 10px;
-            font-size: 0.75rem;
-            font-weight: 300;
+            z-index: 200;
             transition: all 0.3s ease;
+            color: #888;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .toc-icon:hover {
+            background: var(--bg-secondary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+            transform: scale(1.05);
+        }
+
+        /* TOC Panel */
+        .toc-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 80vh;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px var(--shadow-medium);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toc-panel.active {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .toc-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .toc-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 4px;
-            white-space: nowrap;
+            transition: all 0.2s;
         }
 
-        .chapter-nav-h2 .chapter.active {
-            color: #00a896;
-            opacity: 1.0;
+        .toc-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #000;
+        }
+
+        .toc-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .toc-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .toc-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 3px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: var(--bg-secondary);
+            border-left-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .toc-item.active {
+            background: var(--bg-secondary);
+            border-left-color: var(--primary);
+            color: var(--primary);
             font-weight: 500;
-            border-bottom: 1px solid #00a896;
         }
 
-        .chapter-nav-h2 .chapter.fade-1 {
-            opacity: 0.6;
-            color: #666;
+        .toc-item[data-level="1"] {
+            padding-left: 20px;
+            font-weight: 500;
+            font-size: 0.95rem;
         }
 
-        .chapter-nav-h2 .chapter.fade-2 {
-            opacity: 0.3;
-            color: #999;
+        .toc-item[data-level="2"] {
+            padding-left: 40px;
+            font-size: 0.85rem;
         }
 
-        .chapter-nav-h2 .separator {
-            color: #999;
-            padding: 0 4px;
-            font-size: 0.7rem;
+        .toc-item[data-level="3"] {
+            padding-left: 60px;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .toc-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Responsive */
@@ -1860,20 +2151,18 @@ class HTMLPresentationRenderer:
             h1 { font-size: 2.8rem; }
             h2 { font-size: 2rem; }
 
-            .chapter-nav-h1 {
-                bottom: 70px;
+            .chapter-nav {
+                bottom: 45px;
                 padding: 8px 16px;
-                max-width: 90%;
-                overflow-x: auto;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.85rem;
-                padding: 6px 12px;
+                padding: 5px 10px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
+            .toc-panel {
+                width: 280px;
             }
         }
 
@@ -1884,30 +2173,35 @@ class HTMLPresentationRenderer:
             table { font-size: 1rem; }
             th, td { padding: 10px; }
 
-            .chapter-nav-h1 {
-                bottom: 50px;
+            .chapter-nav {
+                bottom: 40px;
                 padding: 6px 12px;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
-            }
-
             .footer-text {
                 font-size: 0.7rem;
-                bottom: 10px;
-                left: 10px;
             }
 
             .page-number {
                 font-size: 0.8rem;
                 bottom: 10px;
                 right: 10px;
+            }
+
+            .toc-panel {
+                width: calc(100vw - 40px);
+                left: 20px;
+                right: 20px;
+            }
+
+            .toc-icon {
+                width: 40px;
+                height: 40px;
             }
         }'''
 
@@ -2164,13 +2458,16 @@ class HTMLPresentationRenderer:
             box-shadow: 0 0 10px var(--primary);
         }
 
-        /* Footer - left bottom corner, no background */
+        /* Footer - centered bottom, semi-transparent */
         .footer-text {
             position: fixed;
-            bottom: 15px;
-            left: 20px;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
             font-size: 0.85rem;
-            color: rgba(102, 102, 102, 0.7);
+            color: rgba(102, 102, 102, 0.5);
+            opacity: 0.5;
             z-index: 50;
             pointer-events: none;
         }
@@ -2257,98 +2554,234 @@ class HTMLPresentationRenderer:
             border-color: var(--primary);
         }
 
-        /* H1 Chapter navigation */
-        .chapter-nav-h1 {
+        /* Single-tier chapter navigation (flattened) */
+        .chapter-nav {
             position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 12px 24px;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            text-align: center;
             z-index: 100;
-            box-shadow: 0 4px 12px var(--shadow);
+            padding: 10px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
         }
 
-        .chapter-nav-h1 .chapter {
+        .chapter-nav::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .chapter-nav::-webkit-scrollbar-thumb {
+            background: rgba(26, 58, 92, 0.3);
+            border-radius: 2px;
+        }
+
+        .chapter-nav .chapter {
             cursor: pointer;
-            padding: 8px 16px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            font-weight: 400;
             color: #888;
             transition: all 0.3s ease;
             border-radius: 4px;
             white-space: nowrap;
+            display: inline-block;
             letter-spacing: 0.3px;
-            text-transform: uppercase;
         }
 
-        .chapter-nav-h1 .chapter:hover {
+        .chapter-nav .chapter:hover {
             color: var(--primary);
             background: var(--bg-tertiary);
         }
 
-        .chapter-nav-h1 .chapter.active {
+        .chapter-nav .chapter.active {
             color: white;
-            font-weight: 700;
+            font-weight: 600;
             background: var(--primary);
             box-shadow: 0 2px 8px var(--shadow);
         }
 
-        .chapter-nav-h1 .separator {
-            color: #444;
-            font-size: 0.9rem;
-            padding: 0 8px;
+        .chapter-nav .chapter[data-level="1"] {
+            font-weight: 500;
+            text-transform: uppercase;
         }
 
-        /* H2 Chapter navigation */
-        .chapter-nav-h2 {
+        .chapter-nav .chapter[data-level="2"] {
+            font-size: 0.85rem;
+        }
+
+        .chapter-nav .chapter[data-level="3"] {
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .chapter-nav .separator {
+            color: #444;
+            padding: 0 8px;
+            display: inline-block;
+        }
+
+        /* TOC Icon */
+        .toc-icon {
             position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 5px 20px;
-            z-index: 95;
-        }
-
-        .chapter-nav-h2 .chapter {
+            justify-content: center;
             cursor: pointer;
-            padding: 4px 10px;
-            font-size: 0.75rem;
-            font-weight: 300;
+            z-index: 200;
             transition: all 0.3s ease;
+            color: #888;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .toc-icon:hover {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px var(--shadow);
+            transform: scale(1.05);
+        }
+
+        /* TOC Panel */
+        .toc-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 80vh;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
             border-radius: 4px;
-            white-space: nowrap;
+            box-shadow: 0 8px 32px var(--shadow);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .chapter-nav-h2 .chapter.active {
-            color: var(--secondary);
-            opacity: 1.0;
+        .toc-panel.active {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .toc-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toc-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .toc-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .toc-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .toc-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .toc-content::-webkit-scrollbar-thumb {
+            background: rgba(26, 58, 92, 0.3);
+            border-radius: 3px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: var(--bg-tertiary);
+            border-left-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .toc-item.active {
+            background: var(--bg-tertiary);
+            border-left-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .toc-item[data-level="1"] {
+            padding-left: 20px;
             font-weight: 500;
-            border-bottom: 1px solid var(--secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
         }
 
-        .chapter-nav-h2 .chapter.fade-1 {
-            opacity: 0.6;
-            color: #666;
+        .toc-item[data-level="2"] {
+            padding-left: 40px;
+            font-size: 0.85rem;
         }
 
-        .chapter-nav-h2 .chapter.fade-2 {
-            opacity: 0.3;
-            color: #999;
+        .toc-item[data-level="3"] {
+            padding-left: 60px;
+            font-size: 0.8rem;
+            font-style: italic;
         }
 
-        .chapter-nav-h2 .separator {
-            color: #999;
-            padding: 0 4px;
-            font-size: 0.7rem;
+        .toc-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Responsive */
@@ -2357,20 +2790,18 @@ class HTMLPresentationRenderer:
             h1 { font-size: 2.8rem; }
             h2 { font-size: 2rem; }
 
-            .chapter-nav-h1 {
-                bottom: 70px;
+            .chapter-nav {
+                bottom: 45px;
                 padding: 8px 16px;
-                max-width: 90%;
-                overflow-x: auto;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.85rem;
-                padding: 6px 12px;
+                padding: 5px 10px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
+            .toc-panel {
+                width: 280px;
             }
         }
 
@@ -2381,24 +2812,18 @@ class HTMLPresentationRenderer:
             table { font-size: 1rem; }
             th, td { padding: 10px; }
 
-            .chapter-nav-h1 {
-                bottom: 50px;
+            .chapter-nav {
+                bottom: 40px;
                 padding: 6px 12px;
             }
 
-            .chapter-nav-h1 .chapter {
+            .chapter-nav .chapter {
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
 
-            .chapter-nav-h2 {
-                display: none;
-            }
-
             .footer-text {
                 font-size: 0.7rem;
-                bottom: 10px;
-                left: 10px;
             }
 
             .page-number {
@@ -2406,73 +2831,51 @@ class HTMLPresentationRenderer:
                 bottom: 10px;
                 right: 10px;
             }
+
+            .toc-panel {
+                width: calc(100vw - 40px);
+                left: 20px;
+                right: 20px;
+            }
+
+            .toc-icon {
+                width: 40px;
+                height: 40px;
+            }
         }'''
 
-    def _get_js(self, total_slides: int, chapters: Dict[str, Any]) -> str:
-        """Get JavaScript for slide navigation with hierarchical chapters"""
-        # Generate H1 chapters data for JS
-        h1_chapters_js = '[]'
-        h2_chapters_js = '[]'
+    def _get_js(self, total_slides: int, chapters: List[Dict[str, Any]]) -> str:
+        """Get JavaScript for slide navigation with flattened chapters and TOC"""
+        # Generate chapters data for JS (flattened structure)
+        chapters_js = '[]'
 
         if chapters:
-            h1_chapters = chapters.get('h1', [])
-            h2_chapters = chapters.get('h2', [])
-
-            if h1_chapters:
-                h1_data = [f'{{"title": "{html.escape(ch["title"])}", "slide": {ch["slide_number"]}}}'
-                          for ch in h1_chapters]
-                h1_chapters_js = '[' + ','.join(h1_data) + ']'
-
-            if h2_chapters:
-                h2_data = []
-                for ch in h2_chapters:
-                    parent = ch.get("parent_slide")
-                    parent_str = str(parent) if parent is not None else "null"
-                    h2_data.append(f'{{"title": "{html.escape(ch["title"])}", "slide": {ch["slide_number"]}, "parentSlide": {parent_str}}}')
-                h2_chapters_js = '[' + ','.join(h2_data) + ']'
+            chapters_data = [f'{{"title": "{html.escape(ch["title"])}", "slide": {ch["slide_number"]}, "level": {ch["level"]}}}'
+                           for ch in chapters]
+            chapters_js = '[' + ','.join(chapters_data) + ']'
 
         return f'''        const slides = document.querySelectorAll('.slide');
         const totalSlides = slides.length;
         let currentSlide = 1;
-        const h1Chapters = {h1_chapters_js};
-        const h2Chapters = {h2_chapters_js};
+        const chapters = {chapters_js};
 
-        // Get current H1 chapter for a slide
-        function getCurrentH1Chapter(slideNum) {{
-            for (let i = h1Chapters.length - 1; i >= 0; i--) {{
-                if (slideNum >= h1Chapters[i].slide) {{
-                    return h1Chapters[i];
-                }}
-            }}
-            return null;
-        }}
+        // Update chapter navigation highlighting (flattened structure)
+        function updateChapterNav(slideNum) {{
+            const chapterElements = document.querySelectorAll('.chapter-nav .chapter');
+            if (chapterElements.length === 0) return;
 
-        // Get next chapter slide number
-        function getNextChapterSlide(chapters, currentIndex) {{
-            if (currentIndex + 1 < chapters.length) {{
-                return chapters[currentIndex + 1].slide;
-            }}
-            return null;
-        }}
-
-        // Update H1 chapter navigation highlighting
-        function updateH1Nav(slideNum) {{
-            const h1Elements = document.querySelectorAll('.chapter-nav-h1 .chapter');
-            if (h1Elements.length === 0) return;
-
-            // Find which H1 chapter this slide belongs to
+            // Find which chapter this slide belongs to
             let activeIndex = -1;
-            for (let i = 0; i < h1Chapters.length; i++) {{
-                const nextSlide = getNextChapterSlide(h1Chapters, i);
-                if (slideNum >= h1Chapters[i].slide &&
-                    (nextSlide === null || slideNum < nextSlide)) {{
+            for (let i = 0; i < chapters.length; i++) {{
+                const nextSlide = i + 1 < chapters.length ? chapters[i + 1].slide : Infinity;
+                if (slideNum >= chapters[i].slide && slideNum < nextSlide) {{
                     activeIndex = i;
                     break;
                 }}
             }}
 
             // Update active state
-            h1Elements.forEach((el, index) => {{
+            chapterElements.forEach((el, index) => {{
                 if (index === activeIndex) {{
                     el.classList.add('active');
                 }} else {{
@@ -2481,79 +2884,27 @@ class HTMLPresentationRenderer:
             }});
         }}
 
-        // Update H2 chapter navigation (dynamic with fade effect)
-        function updateH2Nav(slideNum) {{
-            const h2Nav = document.querySelector('.chapter-nav-h2');
-            if (!h2Nav || h2Chapters.length === 0) return;
+        // Update TOC active item
+        function updateTocActive(slideNum) {{
+            const tocItems = document.querySelectorAll('.toc-item');
+            if (tocItems.length === 0) return;
 
-            // Find current H1 chapter
-            const currentH1 = getCurrentH1Chapter(slideNum);
-            if (!currentH1) return;
-
-            // Get H2 chapters under current H1
-            const h2List = h2Chapters.filter(ch => ch.parentSlide === currentH1.slide);
-            if (h2List.length === 0) {{
-                h2Nav.innerHTML = '';
-                return;
-            }}
-
-            // Find current H2 index
-            let currentH2Index = -1;
-            for (let i = 0; i < h2List.length; i++) {{
-                const nextSlide = i + 1 < h2List.length ? h2List[i + 1].slide : null;
-                if (slideNum >= h2List[i].slide &&
-                    (nextSlide === null || slideNum < nextSlide)) {{
-                    currentH2Index = i;
+            let activeIndex = -1;
+            for (let i = 0; i < chapters.length; i++) {{
+                const nextSlide = i + 1 < chapters.length ? chapters[i + 1].slide : Infinity;
+                if (slideNum >= chapters[i].slide && slideNum < nextSlide) {{
+                    activeIndex = i;
                     break;
                 }}
             }}
 
-            // If no current H2, default to first
-            if (currentH2Index === -1) currentH2Index = 0;
-
-            // Show current ± 2 sections with fade
-            const start = Math.max(0, currentH2Index - 2);
-            const end = Math.min(h2List.length - 1, currentH2Index + 2);
-
-            // Clear and rebuild H2 nav
-            h2Nav.innerHTML = '';
-
-            for (let i = start; i <= end; i++) {{
-                const ch = h2List[i];
-                const span = document.createElement('span');
-                span.className = 'chapter';
-                span.dataset.slide = ch.slide;
-                span.textContent = ch.title;
-
-                // Set fade class based on distance
-                const distance = Math.abs(i - currentH2Index);
-                if (distance === 0) {{
-                    span.classList.add('active');
-                }} else if (distance === 1) {{
-                    span.classList.add('fade-1');
-                }} else if (distance === 2) {{
-                    span.classList.add('fade-2');
+            tocItems.forEach((item, index) => {{
+                if (index === activeIndex) {{
+                    item.classList.add('active');
+                }} else {{
+                    item.classList.remove('active');
                 }}
-
-                // Click handler
-                span.addEventListener('click', () => goToSlide(ch.slide));
-
-                h2Nav.appendChild(span);
-
-                // Add separator
-                if (i < end) {{
-                    const sep = document.createElement('span');
-                    sep.className = 'separator';
-                    sep.textContent = '·';
-                    h2Nav.appendChild(sep);
-                }}
-            }}
-        }}
-
-        // Update all chapter navigation
-        function updateChapterNav(slideNum) {{
-            updateH1Nav(slideNum);
-            updateH2Nav(slideNum);
+            }});
         }}
 
         // Navigate to specific slide
@@ -2585,6 +2936,7 @@ class HTMLPresentationRenderer:
                 ((currentSlide / totalSlides) * 100) + '%';
 
             updateChapterNav(currentSlide);
+            updateTocActive(currentSlide);
         }}
 
         // Keyboard navigation
@@ -2608,6 +2960,14 @@ class HTMLPresentationRenderer:
                 case 'End':
                     e.preventDefault();
                     updateSlide(totalSlides);
+                    break;
+                case 'Escape':
+                    // Close TOC if open
+                    const tocPanel = document.getElementById('tocPanel');
+                    if (tocPanel && tocPanel.classList.contains('active')) {{
+                        tocPanel.classList.remove('active');
+                        document.getElementById('tocIcon').style.display = 'flex';
+                    }}
                     break;
             }}
         }});
@@ -2641,11 +3001,41 @@ class HTMLPresentationRenderer:
             }}
         }}
 
-        // H1 chapter navigation click handlers
-        document.querySelectorAll('.chapter-nav-h1 .chapter').forEach((chapter, index) => {{
+        // TOC Icon click handler
+        const tocIcon = document.getElementById('tocIcon');
+        const tocPanel = document.getElementById('tocPanel');
+        const tocClose = document.getElementById('tocClose');
+
+        if (tocIcon && tocPanel) {{
+            tocIcon.addEventListener('click', () => {{
+                tocPanel.classList.add('active');
+                tocIcon.style.display = 'none';
+            }});
+        }}
+
+        if (tocClose && tocPanel) {{
+            tocClose.addEventListener('click', () => {{
+                tocPanel.classList.remove('active');
+                tocIcon.style.display = 'flex';
+            }});
+        }}
+
+        // Chapter navigation click handlers
+        document.querySelectorAll('.chapter-nav .chapter').forEach((chapter, index) => {{
             chapter.addEventListener('click', () => {{
-                const targetSlide = h1Chapters[index].slide;
+                const targetSlide = chapters[index].slide;
                 goToSlide(targetSlide);
+            }});
+        }});
+
+        // TOC item click handlers
+        document.querySelectorAll('.toc-item').forEach((item, index) => {{
+            item.addEventListener('click', () => {{
+                const targetSlide = chapters[index].slide;
+                goToSlide(targetSlide);
+                // Close TOC after navigation
+                tocPanel.classList.remove('active');
+                tocIcon.style.display = 'flex';
             }});
         }});
 
