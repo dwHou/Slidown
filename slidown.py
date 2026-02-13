@@ -3119,16 +3119,18 @@ class HTMLPresentationRenderer:
 class ResourceManager:
     """Manage resources (images, assets) and output organization"""
 
-    def __init__(self, input_path: str, output_dir: str):
+    def __init__(self, input_path: str, output_dir: str, preserve_paths: bool = False):
         """
         Args:
             input_path: Path to input Markdown file
             output_dir: Output directory for presentation
+            preserve_paths: If True, preserve original image paths without copying
         """
         self.input_path = Path(input_path)
         self.output_dir = Path(output_dir)
         self.assets_dir = self.output_dir / 'assets' / 'images'
         self.copied_images = {}  # Track original -> new path mapping
+        self.preserve_paths = preserve_paths
 
     def setup_directories(self):
         """Create output directory structure"""
@@ -3172,7 +3174,7 @@ class ResourceManager:
             # Handle relative paths
             src_path = self.input_path.parent / src
             if src_path.exists():
-                # Copy image to assets directory
+                # Process image (copy or preserve path)
                 new_path = self._copy_image(src_path)
                 if new_path:
                     return f'<img {before_src}src="{new_path}"{after_src}>'
@@ -3182,15 +3184,26 @@ class ResourceManager:
         return re.sub(img_pattern, replace_img, html_content)
 
     def _copy_image(self, image_path: Path) -> Optional[str]:
-        """Copy image to assets directory
+        """Copy image to assets directory or preserve original path
 
         Args:
             image_path: Path to source image
 
         Returns:
-            Relative path to copied image, or None if copy failed
+            Relative path to image (copied or original), or None if processing failed
         """
         try:
+            # If preserve_paths is True, return original relative path
+            if self.preserve_paths:
+                # Calculate relative path from Markdown file to image
+                try:
+                    rel_path = image_path.relative_to(self.input_path.parent)
+                    return str(rel_path)
+                except ValueError:
+                    # If image is not relative to Markdown file (e.g., absolute path)
+                    # Return the path as-is
+                    return str(image_path)
+
             # Check if already copied
             image_key = str(image_path)
             if image_key in self.copied_images:
@@ -3215,7 +3228,7 @@ class ResourceManager:
             return rel_path
 
         except Exception as e:
-            print(f"Warning: Failed to copy image {image_path}: {e}")
+            print(f"Warning: Failed to process image {image_path}: {e}")
             return None
 
     def create_readme(self):
@@ -3264,7 +3277,8 @@ def convert_file(input_path: str, output_path: str = None,
                 enable_chapter_nav: bool = True,
                 chapter_level: int = 3,
                 viewport_height: Optional[int] = None,
-                content_threshold: float = 0.8) -> bool:
+                content_threshold: float = 0.8,
+                preserve_image_paths: bool = False) -> bool:
     """Convert a single Markdown file to HTML presentation
 
     Args:
@@ -3281,6 +3295,7 @@ def convert_file(input_path: str, output_path: str = None,
         chapter_level: Heading level to use for chapters (1-6)
         viewport_height: Viewport height in pixels (None = auto-detect)
         content_threshold: Content threshold as fraction of viewport height
+        preserve_image_paths: If True, preserve original image paths without copying
 
     Returns:
         True if successful, False otherwise
@@ -3306,7 +3321,7 @@ def convert_file(input_path: str, output_path: str = None,
         print(f"  Output directory: {output_dir}")
 
         # Setup resource manager
-        resource_mgr = ResourceManager(input_path, output_dir)
+        resource_mgr = ResourceManager(input_path, output_dir, preserve_paths=preserve_image_paths)
         resource_mgr.setup_directories()
 
         # Parse Markdown
@@ -3500,6 +3515,16 @@ Navigation:
         help='Content threshold as fraction of viewport height (default: 0.8 = 80%%)'
     )
 
+    parser.add_argument(
+        '--preserve-image-paths',
+        '--no-copy-images',
+        action='store_true',
+        dest='preserve_image_paths',
+        help='Preserve original image paths from Markdown without copying to assets directory. '
+             'Useful when the HTML file will be placed in the same directory as the Markdown file. '
+             'Default: False (images are copied to assets/)'
+    )
+
     args = parser.parse_args()
 
     # Handle chapter nav flag
@@ -3523,7 +3548,8 @@ Navigation:
         enable_chapter_nav=enable_chapter_nav,
         chapter_level=args.chapter_level,
         viewport_height=args.viewport_height,
-        content_threshold=args.content_threshold
+        content_threshold=args.content_threshold,
+        preserve_image_paths=args.preserve_image_paths
     )
 
     if success:
