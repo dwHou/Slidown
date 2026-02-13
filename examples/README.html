@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slidown</title>
+
+    <!-- KaTeX for LaTeX math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMath()"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --primary: #0066cc;
+            --secondary: #00a896;
+            --accent: #ff6b6b;
+            --text-primary: #2c3e50;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-light: rgba(0, 0, 0, 0.05);
+            --shadow-medium: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Presentation container */
+        .presentation {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Individual slides */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 60px 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(50px);
+            transition: all 0.4s ease;
+            overflow-y: auto;
+            background: var(--bg-primary);
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .slide.exit {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        /* Typography */
+        h1 {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid var(--secondary);
+        }
+
+        h3 {
+            font-size: 1.75rem;
+            color: var(--secondary);
+            margin: 28px 0 16px 0;
+            font-weight: 600;
+        }
+
+        h4 {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            margin: 24px 0 12px 0;
+            font-weight: 600;
+        }
+
+        h5, h6 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+
+        p, li {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            font-size: 1.1rem;
+            overflow-x: auto;
+            font-family: 'Source Code Pro', monospace;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        code {
+            font-family: 'Source Code Pro', monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 1em;
+            color: var(--text-primary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+
+        tr:hover td {
+            background: var(--bg-secondary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 16px 0 16px 32px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        li::marker {
+            color: var(--secondary);
+        }
+
+        /* Links */
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        a:hover {
+            color: var(--secondary);
+            border-bottom-color: var(--secondary);
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-medium);
+            margin: 16px 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--secondary);
+            padding: 16px 20px;
+            margin: 16px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Horizontal rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 32px 0;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        /* Footer - centered bottom, semi-transparent */
+        .footer-text {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(108, 117, 125, 0.5);
+            opacity: 0.5;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* Page number - right bottom corner */
+        .page-number {
+            position: fixed;
+            bottom: 15px;
+            right: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.5);
+            padding: 5px 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            z-index: 50;
+            pointer-events: none;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        /* Navigation hints */
+        .nav-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 30px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            z-index: 100;
+        }
+
+        .nav-hint kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 10px;
+            margin: 0 4px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Title slide special */
+        .slide.title-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .slide.title-slide h1 {
+            font-size: 5rem;
+            margin-bottom: 32px;
+            color: var(--primary);
+        }
+
+        /* Fullscreen button */
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            font-size: 1rem;
+            z-index: 100;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .fullscreen-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Single-tier chapter navigation (flattened) */
+        .chapter-nav {
+            position: fixed;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 100;
+            padding: 10px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .chapter-nav::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .chapter-nav::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 2px;
+        }
+
+        .chapter-nav .chapter {
+            cursor: pointer;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #888;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .chapter-nav .chapter:hover {
+            color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .chapter-nav .chapter.active {
+            color: #0066cc;
+            font-weight: 600;
+            background: var(--bg-secondary);
+            border-bottom: 2px solid #0066cc;
+        }
+
+        .chapter-nav .chapter[data-level="1"] {
+            font-weight: 500;
+        }
+
+        .chapter-nav .chapter[data-level="2"] {
+            font-size: 0.85rem;
+        }
+
+        .chapter-nav .chapter[data-level="3"] {
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .chapter-nav .separator {
+            color: #444;
+            padding: 0 8px;
+            display: inline-block;
+        }
+
+        /* TOC Icon */
+        .toc-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            transition: all 0.3s ease;
+            color: #888;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .toc-icon:hover {
+            background: var(--bg-secondary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+            transform: scale(1.05);
+        }
+
+        /* TOC Panel */
+        .toc-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 80vh;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px var(--shadow-medium);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .toc-panel.active {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .toc-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .toc-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .toc-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #000;
+        }
+
+        .toc-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .toc-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .toc-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 3px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: var(--bg-secondary);
+            border-left-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .toc-item.active {
+            background: var(--bg-secondary);
+            border-left-color: var(--primary);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .toc-item[data-level="1"] {
+            padding-left: 20px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .toc-item[data-level="2"] {
+            padding-left: 40px;
+            font-size: 0.85rem;
+        }
+
+        .toc-item[data-level="3"] {
+            padding-left: 60px;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .toc-item[data-level="4"] {
+            padding-left: 80px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .toc-item[data-level="5"] {
+            padding-left: 100px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .toc-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .slide { padding: 48px; }
+            h1 { font-size: 2.8rem; }
+            h2 { font-size: 2rem; }
+
+            .chapter-nav {
+                bottom: 45px;
+                padding: 8px 16px;
+            }
+
+            .chapter-nav .chapter {
+                font-size: 0.85rem;
+                padding: 5px 10px;
+            }
+
+            .toc-panel {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide { padding: 36px 24px; }
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.6rem; }
+            table { font-size: 1rem; }
+            th, td { padding: 10px; }
+
+            .chapter-nav {
+                bottom: 40px;
+                padding: 6px 12px;
+            }
+
+            .chapter-nav .chapter {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+
+            .footer-text {
+                font-size: 0.7rem;
+            }
+
+            .page-number {
+                font-size: 0.8rem;
+                bottom: 10px;
+                right: 10px;
+            }
+
+            .toc-panel {
+                width: calc(100vw - 40px);
+                left: 20px;
+                right: 20px;
+            }
+
+            .toc-icon {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">[ F11 全屏 ]</button>
+
+    <div class="presentation">
+        <!-- Slide 1 -->
+        <div class="slide active" data-slide="1" data-chapter="Slidown">
+<h1 id="slidown">Slidown</h1>
+<div align="center">
+  <h1 style="font-family: 'Orbitron', sans-serif; font-size: 3rem; letter-spacing: -1px;">
+    <span style="font-weight: 700; color: #00D9FF; text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);">Sli</span><span style="font-weight: 300; color: #555; padding: 0 0.2rem;">|</span><span style="font-weight: 300; color: #888888;">down</span>
+  </h1>
+</div>
+
+<p><strong>Transform Markdown into Beautiful HTML Presentations</strong><br />
+<strong>将 Markdown 笔记优雅转换为网页版演示文稿</strong></p>
+<hr />
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide" data-slide="2" data-chapter="特性">
+<h2 id="_1">特性</h2>
+<h3 id="_2">核心功能</h3>
+<ul>
+<li><strong>Markdown 到 HTML</strong> - 单文件输出，所有 CSS/JS 内联，无外部依赖</li>
+<li><strong>三种精美主题</strong> - Tech/Cyberpunk、Clean/Fresh、Corporate</li>
+<li><strong>响应式设计</strong> - 完美适配桌面、平板、手机</li>
+<li><strong>智能分页</strong> - 自动调整内容，基于视口高度和内容阈值，无需滚动</li>
+<li><strong>双层导航系统</strong> - 章节进度条（底部）+ 可展开目录面板（左上角）</li>
+<li><strong>LaTeX 数学公式</strong> - 完整支持行内公式 <code>&lt;!--MATH_INLINE_1--&gt;</code> 和块级公式 <code>&lt;!--MATH_DISPLAY_0--&gt;</code>，KaTeX 渲染</li>
+<li><strong>代码高亮</strong> - Pygments 支持，30+ 编程语言</li>
+<li><strong>极速加载</strong> - 轻量级单文件，本地即可运行</li>
+<li><strong>灵活图片处理</strong> - 自动拷贝或保留原始路径</li>
+</ul>
+<h3 id="_3">导航系统</h3>
+<ul>
+<li><strong>章节进度条</strong>（底部）- 显示主要章节（默认 H1-H2），支持快速跳转</li>
+<li><strong>目录面板</strong>（左上角）- 完整文档大纲（H1-H5），点击展开/收起</li>
+<li><strong>键盘导航</strong> - 方向键、空格、Home/End 快捷键</li>
+</ul>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide" data-slide="3" data-chapter="特性">
+<h3 id="_1">图片处理</h3>
+<ul>
+<li><strong>默认模式</strong> - 自动拷贝图片到 <code>assets/images/</code> 目录</li>
+<li><strong>路径保留模式</strong> - 使用 <code>--preserve-image-paths</code> 保留原始路径（适合 HTML 与 Markdown 同目录）</li>
+</ul>
+<hr />
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide" data-slide="4" data-chapter="快速开始">
+<h2 id="_1">快速开始</h2>
+<h3 id="_2">安装依赖</h3>
+<pre><code class="language-bash">pip install markdown pygments
+</code></pre>
+<p>或使用 requirements.txt：</p>
+<pre><code class="language-bash">pip install -r requirements.txt
+</code></pre>
+<p>依赖项：<br />
+- <code>markdown&gt;=3.4.1</code> - Markdown 解析<br />
+- <code>Pygments&gt;=2.15.0</code> - 代码语法高亮</p>
+<h3 id="_3">基本使用</h3>
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide" data-slide="5" data-chapter="快速开始">
+<pre><code class="language-bash"># 克隆仓库
+git clone https://github.com/dwHou/slidown.git
+cd Slidown
+
+# 转换 Markdown 文档（自动生成时间戳输出文件夹）
+python slidown.py your_notes.md
+
+# 使用指定主题
+python slidown.py your_notes.md --theme clean
+
+# 添加自定义页脚
+python slidown.py your_notes.md --theme corporate --footer &quot;© 2026 Your Name&quot;
+</code></pre>
+<h3 id="_1">输出结果</h3>
+<pre><code>your_notes_20260213143025/
+├── presentation.html          # 主演示文稿（单文件，所有资源内联）
+├── assets/
+│   └── images/               # 图片资源（如果使用默认拷贝模式）
+└── README.txt                # 使用说明
+</code></pre>
+<p>在浏览器中打开 <code>presentation.html</code> 即可查看演示文稿。</p>
+<hr />
+        </div>
+
+        <!-- Slide 6 -->
+        <div class="slide" data-slide="6" data-chapter="主题">
+<h2 id="_1">主题</h2>
+<h3 id="tech-cyberpunk">Tech / Cyberpunk（默认）</h3>
+<ul>
+<li>深色背景 + 霓虹色（青色、蓝色、绿色）</li>
+<li>网格背景效果</li>
+<li>适合技术演讲、编程教程、产品发布</li>
+</ul>
+<pre><code class="language-bash">python slidown.py document.md --theme tech
+</code></pre>
+<h3 id="clean-fresh">Clean / Fresh</h3>
+<ul>
+<li>明亮白色背景</li>
+<li>柔和配色，清爽简约</li>
+<li>适合文档、教学讲义、学术演示</li>
+</ul>
+<pre><code class="language-bash">python slidown.py document.md --theme clean
+</code></pre>
+        </div>
+
+        <!-- Slide 7 -->
+        <div class="slide" data-slide="7" data-chapter="主题">
+<h3 id="corporate">Corporate</h3>
+<ul>
+<li>专业商务风格</li>
+<li>深蓝/灰色配色</li>
+<li>适合企业宣讲、正式报告、投资人演示</li>
+</ul>
+<pre><code class="language-bash">python slidown.py document.md --theme corporate
+</code></pre>
+<hr />
+        </div>
+
+        <!-- Slide 8 -->
+        <div class="slide" data-slide="8" data-chapter="使用指南">
+<h2 id="_1">使用指南</h2>
+<h3 id="_2">命令行参数</h3>
+        </div>
+
+        <!-- Slide 9 -->
+        <div class="slide" data-slide="9" data-chapter="使用指南">
+<pre><code class="language-bash">python slidown.py INPUT [OPTIONS]
+
+必需参数:
+  INPUT                     输入 Markdown 文件路径
+
+输出选项:
+  -o, --output DIR          输出基础目录（默认：Markdown 文件同级目录）
+                            会在此目录下创建时间戳文件夹
+  -t, --theme THEME         主题：tech/cyberpunk, clean/fresh, corporate
+                            默认：tech
+  -f, --footer TEXT         自定义页脚文本
+
+分页控制:
+  --split-level N           标题级别用于分页（1-6，默认：2 = H2）
+  --viewport-height PX      视口高度，单位像素（默认：900）
+  --content-threshold N     内容阈值，0-1 之间（默认：0.8 = 80%）
+  --max-content-length N    每页最大字符数（默认：800）
+  --max-elements N          每页最大元素数（默认：15）
+  --show-page-numbers       显示页码（如 &quot;标题 (1/3)&quot;）
+
+导航控制:
+  --chapter-level N         进度条显示的标题级别（1-6，默认：2 = H2）
+  --no-chapter-nav          禁用章节进度条
+
+图片处理:
+  --preserve-image-paths    保留原始图片路径（不拷贝到 assets）
+  --no-copy-images          同上
+</code></pre>
+        </div>
+
+        <!-- Slide 10 -->
+        <div class="slide" data-slide="10" data-chapter="使用指南">
+<h3 id="_1">使用示例</h3>
+<h4 id="1">1. 基础转换</h4>
+<pre><code class="language-bash">python slidown.py lecture.md
+# 输出：lecture_20260213143025/presentation.html
+</code></pre>
+<h4 id="2">2. 指定主题和输出目录</h4>
+<pre><code class="language-bash">python slidown.py notes.md -o ~/Desktop/presentation --theme clean
+</code></pre>
+<h4 id="3">3. 企业宣讲（带自定义页脚）</h4>
+<pre><code class="language-bash">python slidown.py pitch.md --theme corporate --footer &quot;Confidential - © 2026 Company Inc.&quot;
+</code></pre>
+        </div>
+
+        <!-- Slide 11 -->
+        <div class="slide" data-slide="11" data-chapter="使用指南">
+<h4 id="4">4. 调整分页和导航</h4>
+<pre><code class="language-bash"># 使用 H1 标题分页，显示更多章节（H1-H3）
+python slidown.py doc.md --split-level 1 --chapter-level 3
+
+# 调整页面高度和内容阈值
+python slidown.py doc.md --viewport-height 1080 --content-threshold 0.75
+</code></pre>
+<h4 id="5">5. 保留图片路径（不拷贝）</h4>
+<pre><code class="language-bash">python slidown.py article.md --preserve-image-paths
+# HTML 可以直接放到 Markdown 同目录使用
+</code></pre>
+<h4 id="6">6. 智能分页（自定义内容长度）</h4>
+<pre><code class="language-bash">python slidown.py long_tutorial.md --max-content-length 600 --max-elements 12
+</code></pre>
+<hr />
+        </div>
+
+        <!-- Slide 12 -->
+        <div class="slide" data-slide="12" data-chapter="LaTeX 数学公式">
+<h2 id="latex">LaTeX 数学公式</h2>
+<p>Slidown 完整支持 LaTeX 数学公式，使用 KaTeX 渲染：</p>
+<p><strong>行内公式：</strong></p>
+<pre><code class="language-markdown">质能方程 &lt;!--MATH_INLINE_2--&gt; 是物理学的基础。
+</code></pre>
+<p><strong>块级公式：</strong></p>
+<pre><code class="language-markdown">&lt;!--MATH_DISPLAY_0--&gt;
+</code></pre>
+<p><strong>示例效果：</strong><br />
+- 行内：质能方程 $E=mc^2$ 是物理学的基础<br />
+- 块级：高斯积分公式</p>
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+<hr />
+        </div>
+
+        <!-- Slide 13 -->
+        <div class="slide" data-slide="13" data-chapter="导航系统">
+<h2 id="_1">导航系统</h2>
+<h3 id="_2">章节进度条（底部）</h3>
+<ul>
+<li>显示主要章节（默认 H1-H2）</li>
+<li>高亮当前位置</li>
+<li>点击章节名称快速跳转</li>
+<li>可通过 <code>--chapter-level</code> 配置显示级别</li>
+</ul>
+<h3 id="_3">目录面板（左上角）</h3>
+<ul>
+<li>显示完整文档大纲（H1-H5）</li>
+<li>层次缩进清晰</li>
+<li>点击目录图标展开/收起</li>
+<li>支持精确跳转到任意标题</li>
+</ul>
+<h3 id="_4">键盘快捷键</h3>
+<ul>
+<li><strong>→</strong> 或 <strong>空格</strong> 或 <strong>PageDown</strong> - 下一页</li>
+<li><strong>←</strong> 或 <strong>PageUp</strong> - 上一页</li>
+</ul>
+        </div>
+
+        <!-- Slide 14 -->
+        <div class="slide" data-slide="14" data-chapter="导航系统">
+<ul>
+<li><strong>Home</strong> - 跳转到第一页</li>
+<li><strong>End</strong> - 跳转到最后一页</li>
+<li><strong>F11</strong> - 全屏模式</li>
+</ul>
+<h3 id="_1">触摸/鼠标导航</h3>
+<ul>
+<li>左滑或点击右侧 - 下一页</li>
+<li>右滑或点击左侧 - 上一页</li>
+</ul>
+<hr />
+        </div>
+
+        <!-- Slide 15 -->
+        <div class="slide" data-slide="15" data-chapter="高级功能">
+<h2 id="_1">高级功能</h2>
+<h3 id="_2">智能分页</h3>
+<ul>
+<li><strong>自动检测内容长度</strong> - 基于视口高度和内容阈值</li>
+<li><strong>保证无需滚动</strong> - 每页内容不超过配置的最大高度</li>
+<li><strong>保护完整性</strong> - 不切断代码块、公式、表格</li>
+<li><strong>可配置</strong> - 通过 <code>--viewport-height</code> 和 <code>--content-threshold</code> 调整</li>
+</ul>
+<p><strong>工作原理：</strong><br />
+1. 根据标题级别（<code>--split-level</code>）初步分页<br />
+2. 检测每页内容长度<br />
+3. 如果超过阈值，智能拆分为多个子页<br />
+4. 保护代码块、表格、公式等不被切断</p>
+<h3 id="_3">图片处理</h3>
+<p><strong>默认模式（拷贝）：</strong></p>
+        </div>
+
+        <!-- Slide 16 -->
+        <div class="slide" data-slide="16" data-chapter="高级功能">
+<pre><code class="language-bash">python slidown.py doc.md
+# 图片拷贝到 doc_20260213143025/assets/images/
+# 输出自包含的演示文稿，适合分享和归档
+</code></pre>
+<p><strong>路径保留模式：</strong></p>
+<pre><code class="language-bash">python slidown.py doc.md --preserve-image-paths
+# 保留 Markdown 中的原始路径
+# 不拷贝图片文件
+# 适合 HTML 与 Markdown 同目录使用
+</code></pre>
+<h3 id="_1">自定义页脚</h3>
+<pre><code class="language-bash">python slidown.py doc.md --footer &quot;© 2026 Your Company - Confidential&quot;
+# 页脚居中显示，半透明背景，所有页面统一
+</code></pre>
+<h3 id="_2">章节级别配置</h3>
+        </div>
+
+        <!-- Slide 17 -->
+        <div class="slide" data-slide="17" data-chapter="高级功能">
+<pre><code class="language-bash"># 进度条显示 H1-H3（更详细的章节）
+python slidown.py doc.md --chapter-level 3
+
+# 进度条仅显示 H1（顶级章节）
+python slidown.py doc.md --chapter-level 1
+</code></pre>
+<hr />
+        </div>
+
+        <!-- Slide 18 -->
+        <div class="slide" data-slide="18" data-chapter="支持的 Markdown 语法">
+<h2 id="markdown">支持的 Markdown 语法</h2>
+<ul>
+<li><strong>标题</strong>（H1-H6）</li>
+<li><strong>有序列表和无序列表</strong></li>
+<li><strong>代码块</strong>（带语法高亮，支持 30+ 语言）</li>
+<li><strong>行内代码</strong></li>
+<li><strong>粗体、斜体、删除线</strong></li>
+<li><strong>链接</strong></li>
+<li><strong>图片</strong>（本地和网络图片）</li>
+<li><strong>表格</strong></li>
+<li><strong>引用块</strong></li>
+<li><strong>水平分割线</strong></li>
+<li><strong>换行</strong></li>
+<li><strong>LaTeX 数学公式</strong>（行内和块级）</li>
+</ul>
+<hr />
+        </div>
+
+        <!-- Slide 19 -->
+        <div class="slide" data-slide="19" data-chapter="项目结构">
+<h2 id="_1">项目结构</h2>
+<pre><code>Slidown/
+├── README.md              # 使用说明（本文件）
+├── QUICKSTART.md          # 快速开始指南
+├── USAGE_GUIDE.md         # 详细使用指南
+├── CHANGELOG.md           # 版本历史
+├── requirements.txt       # Python 依赖
+├── slidown.py             # 主程序（Markdown 转 HTML）
+├── examples/              # 示例文件
+├── docs/                  # 官方网站
+│   └── index.html         # 项目主页
+├── templates/             # 主题模板（内部）
+└── utils/                 # 工具模块
+</code></pre>
+<hr />
+        </div>
+
+        <!-- Slide 20 -->
+        <div class="slide" data-slide="20" data-chapter="技术实现">
+<h2 id="_1">技术实现</h2>
+<ul>
+<li><strong>解析器</strong> - Python <code>markdown</code> 库，支持扩展（fenced_code、tables、toc、nl2br）</li>
+<li><strong>代码高亮</strong> - <code>Pygments</code> 语法高亮</li>
+<li><strong>数学公式</strong> - KaTeX 渲染引擎（CDN）</li>
+<li><strong>样式</strong> - 三种主题（Tech、Clean、Corporate）</li>
+<li><strong>导航</strong> - 纯 JavaScript 实现，无外部库依赖</li>
+<li><strong>动画</strong> - CSS3 过渡和关键帧动画</li>
+<li><strong>响应式</strong> - 媒体查询适配移动端</li>
+</ul>
+<hr />
+        </div>
+
+        <!-- Slide 21 -->
+        <div class="slide" data-slide="21" data-chapter="使用场景">
+<h2 id="_1">使用场景</h2>
+<ul>
+<li><strong>技术演讲</strong> - 代码演示、架构讲解</li>
+<li><strong>教学课件</strong> - 数学公式、图表展示</li>
+<li><strong>项目汇报</strong> - 进度展示、数据分析</li>
+<li><strong>文档演示</strong> - API 文档、用户指南</li>
+<li><strong>博客分享</strong> - 技术文章可视化</li>
+<li><strong>企业宣讲</strong> - 产品介绍、季度报告</li>
+</ul>
+<hr />
+        </div>
+
+        <!-- Slide 22 -->
+        <div class="slide" data-slide="22" data-chapter="优势">
+<h2 id="_1">优势</h2>
+<p><strong>相比传统 PowerPoint：</strong><br />
+- 无需安装 Office 软件<br />
+- 文件体积更小（纯文本 HTML）<br />
+- 易于版本控制（Git 友好）<br />
+- 支持代码语法高亮<br />
+- 支持 LaTeX 数学公式<br />
+- 响应式设计，适配各种设备<br />
+- 快速分享（浏览器直接打开）</p>
+<p><strong>相比在线工具（Google Slides、Notion）：</strong><br />
+- 完全离线可用<br />
+- 无需登录账号<br />
+- 隐私安全（本地存储）<br />
+- 加载速度快<br />
+- 自定义主题灵活</p>
+<hr />
+        </div>
+
+        <!-- Slide 23 -->
+        <div class="slide" data-slide="23" data-chapter="常见问题">
+<h2 id="_1">常见问题</h2>
+<p><strong>Q: 生成的 HTML 文件可以离线使用吗？</strong><br />
+A: 可以。所有 CSS 和 JavaScript 都内联在 HTML 中。数学公式需要网络（KaTeX CDN），但可以下载 KaTeX 到本地使用。</p>
+<p><strong>Q: 支持数学公式吗？</strong><br />
+A: 完整支持！使用 <code>&lt;!--MATH_INLINE_1--&gt;</code>（行内）和 <code>&lt;!--MATH_DISPLAY_0--&gt;</code>（块级）语法，KaTeX 自动渲染。</p>
+<p><strong>Q: 如何自定义主题？</strong><br />
+A: 当前支持 3 种内置主题（tech、clean、corporate），可通过 <code>--theme</code> 参数选择。未来版本将支持自定义主题配置。</p>
+<p><strong>Q: 图片路径怎么处理？</strong><br />
+A: 默认模式下图片会自动拷贝到 <code>assets/images/</code> 目录。如果需要保留原始路径，使用 <code>--preserve-image-paths</code> 参数。</p>
+<p><strong>Q: 可以导出为 PDF 吗？</strong><br />
+A: 可以。在浏览器中打开 HTML 文件，使用"打印"功能，选择"另存为 PDF"。</p>
+<p><strong>Q: 支持哪些浏览器？</strong><br />
+A: 所有现代浏览器（Chrome、Firefox、Safari、Edge）。不支持 IE。</p>
+<p><strong>Q: 如何分享演示文稿？</strong><br />
+A: 三种方式：<br />
+  1. 直接发送 HTML 文件（如果使用默认图片拷贝模式）<br />
+  2. 压缩整个输出文件夹（包含 assets）<br />
+  3. 上传到静态网站托管服务（GitHub Pages、Netlify 等）</p>
+<hr />
+        </div>
+
+        <!-- Slide 24 -->
+        <div class="slide" data-slide="24" data-chapter="贡献">
+<h2 id="_1">贡献</h2>
+<p>欢迎贡献！请：<br />
+1. Fork 本仓库<br />
+2. 创建特性分支 (<code>git checkout -b feature/amazing-feature</code>)<br />
+3. 提交更改 (<code>git commit -m 'Add amazing feature'</code>)<br />
+4. 推送到分支 (<code>git push origin feature/amazing-feature</code>)<br />
+5. 创建 Pull Request</p>
+<p><strong>贡献方向：</strong><br />
+- 新增主题设计<br />
+- 改进智能分页算法<br />
+- 添加动画效果<br />
+- 优化性能<br />
+- 修复 Bug<br />
+- 完善文档</p>
+<hr />
+        </div>
+
+        <!-- Slide 25 -->
+        <div class="slide" data-slide="25" data-chapter="许可证">
+<h2 id="_1">许可证</h2>
+<p>MIT License - 详见 LICENSE 文件</p>
+<hr />
+        </div>
+
+        <!-- Slide 26 -->
+        <div class="slide" data-slide="26" data-chapter="项目说明">
+<h2 id="_1">项目说明</h2>
+<p><strong>Slidown</strong> = "Slide" (幻灯片) + "Markdown" (标记语言)</p>
+<p>本项目专注于将 Markdown 文档转换为精美的 HTML 格式网页演示文稿，让技术内容展示更加优雅和专业。</p>
+<h3 id="logo">Logo 设计</h3>
+<p>Slidown 采用纯 CSS 实现的 Logo 设计，无需任何图片文件：</p>
+<pre><code class="language-html">&lt;div class=&quot;logo&quot;&gt;
+  &lt;span class=&quot;logo-sli&quot;&gt;Sli&lt;/span&gt;&lt;span class=&quot;logo-separator&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;logo-down&quot;&gt;down&lt;/span&gt;
+&lt;/div&gt;
+</code></pre>
+<p><strong>设计理念：</strong><br />
+- <strong>Sli</strong> - 粗体青色 (#00D9FF)，带发光效果 - 代表转换和技术<br />
+- <strong>|</strong> - 细体灰色分隔符 - 连接两种格式<br />
+- <strong>down</strong> - 细体灰色 (#888888) - 代表 Markdown 基础</p>
+<p>完整的 CSS 实现和官方网站请访问 <code>docs/index.html</code></p>
+<hr />
+        </div>
+
+        <!-- Slide 27 -->
+        <div class="slide" data-slide="27" data-chapter="链接">
+<h2 id="_1">链接</h2>
+<ul>
+<li><strong>项目主页</strong>: <a href="https://github.com/dwHou/slidown">GitHub Repository</a></li>
+<li><strong>问题反馈</strong>: <a href="https://github.com/dwHou/slidown/issues">Issues</a></li>
+<li><strong>官方网站</strong>: <a href="docs/index.html">docs/index.html</a></li>
+<li><strong>更新日志</strong>: <a href="CHANGELOG.md">CHANGELOG.md</a></li>
+</ul>
+<hr />
+<p><strong>Made with love by Devonn Hou</strong></p>
+        </div>
+
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Footer (left bottom) -->
+    <div class="footer-text">2026 @ Devonn</div>
+
+    <!-- Page number (right bottom) -->
+    <div class="page-number">
+        <span id="currentSlide">1</span> / <span id="totalSlides">27</span>
+    </div>
+
+    <!-- Navigation hint -->
+    <div class="nav-hint">
+        <kbd>←</kbd> <kbd>→</kbd> 或 <kbd>空格</kbd> 导航
+    </div>
+
+    <!-- TOC Icon -->
+    <div class="toc-icon" id="tocIcon" title="目录">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </div>
+
+    <!-- TOC Panel -->
+    <div class="toc-panel" id="tocPanel">
+        <div class="toc-header">
+            <h3>目录</h3>
+            <button class="toc-close" id="tocClose">×</button>
+        </div>
+        <div class="toc-content">
+        <div class="toc-item" data-level="1" data-slide="1">
+            <span class="toc-title">Slidown</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="2">
+            <span class="toc-title">特性</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="2">
+            <span class="toc-title">核心功能</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="2">
+            <span class="toc-title">导航系统</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="3">
+            <span class="toc-title">图片处理</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="4">
+            <span class="toc-title">快速开始</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="4">
+            <span class="toc-title">安装依赖</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="4">
+            <span class="toc-title">基本使用</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="5">
+            <span class="toc-title">输出结果</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="6">
+            <span class="toc-title">主题</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="6">
+            <span class="toc-title">Tech / Cyberpunk（默认）</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="6">
+            <span class="toc-title">Clean / Fresh</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="7">
+            <span class="toc-title">Corporate</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="8">
+            <span class="toc-title">使用指南</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="8">
+            <span class="toc-title">命令行参数</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="10">
+            <span class="toc-title">使用示例</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="10">
+            <span class="toc-title">1. 基础转换</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="10">
+            <span class="toc-title">2. 指定主题和输出目录</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="10">
+            <span class="toc-title">3. 企业宣讲（带自定义页脚）</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="11">
+            <span class="toc-title">4. 调整分页和导航</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="11">
+            <span class="toc-title">5. 保留图片路径（不拷贝）</span>
+        </div>
+        <div class="toc-item" data-level="4" data-slide="11">
+            <span class="toc-title">6. 智能分页（自定义内容长度）</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="12">
+            <span class="toc-title">LaTeX 数学公式</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="13">
+            <span class="toc-title">章节进度条（底部）</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="13">
+            <span class="toc-title">目录面板（左上角）</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="13">
+            <span class="toc-title">键盘快捷键</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="14">
+            <span class="toc-title">触摸/鼠标导航</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="15">
+            <span class="toc-title">高级功能</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="15">
+            <span class="toc-title">智能分页</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="16">
+            <span class="toc-title">自定义页脚</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="16">
+            <span class="toc-title">章节级别配置</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="18">
+            <span class="toc-title">支持的 Markdown 语法</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="19">
+            <span class="toc-title">项目结构</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="20">
+            <span class="toc-title">技术实现</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="21">
+            <span class="toc-title">使用场景</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="22">
+            <span class="toc-title">优势</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="23">
+            <span class="toc-title">常见问题</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="24">
+            <span class="toc-title">贡献</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="25">
+            <span class="toc-title">许可证</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="26">
+            <span class="toc-title">项目说明</span>
+        </div>
+        <div class="toc-item" data-level="3" data-slide="26">
+            <span class="toc-title">Logo 设计</span>
+        </div>
+        <div class="toc-item" data-level="2" data-slide="27">
+            <span class="toc-title">链接</span>
+        </div>
+        </div>
+    </div>
+
+    <!-- Chapter navigation (progress bar) -->
+    <div class="chapter-nav">
+        <span class="chapter" data-level="1" data-slide="1">Slidown</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="2">特性</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="4">快速开始</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="6">主题</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="8">使用指南</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="12">LaTeX 数学公式</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="13">导航系统</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="15">高级功能</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="18">支持的 Markdown 语法</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="19">项目结构</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="20">技术实现</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="21">使用场景</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="22">优势</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="23">常见问题</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="24">贡献</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="25">许可证</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="26">项目说明</span>
+        <span class="separator">|</span>
+        <span class="chapter" data-level="2" data-slide="27">链接</span>
+    </div>
+
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let currentSlide = 1;
+        const chapters = [{"title": "Slidown", "slide": 1, "level": 1},{"title": "特性", "slide": 2, "level": 2},{"title": "快速开始", "slide": 4, "level": 2},{"title": "主题", "slide": 6, "level": 2},{"title": "使用指南", "slide": 8, "level": 2},{"title": "LaTeX 数学公式", "slide": 12, "level": 2},{"title": "导航系统", "slide": 13, "level": 2},{"title": "高级功能", "slide": 15, "level": 2},{"title": "支持的 Markdown 语法", "slide": 18, "level": 2},{"title": "项目结构", "slide": 19, "level": 2},{"title": "技术实现", "slide": 20, "level": 2},{"title": "使用场景", "slide": 21, "level": 2},{"title": "优势", "slide": 22, "level": 2},{"title": "常见问题", "slide": 23, "level": 2},{"title": "贡献", "slide": 24, "level": 2},{"title": "许可证", "slide": 25, "level": 2},{"title": "项目说明", "slide": 26, "level": 2},{"title": "链接", "slide": 27, "level": 2}];
+
+        // Update chapter navigation highlighting (flattened structure)
+        function updateChapterNav(slideNum) {
+            const chapterElements = document.querySelectorAll('.chapter-nav .chapter');
+            if (chapterElements.length === 0) return;
+
+            // Find which chapter this slide belongs to
+            let activeIndex = -1;
+            for (let i = 0; i < chapters.length; i++) {
+                const nextSlide = i + 1 < chapters.length ? chapters[i + 1].slide : Infinity;
+                if (slideNum >= chapters[i].slide && slideNum < nextSlide) {
+                    activeIndex = i;
+                    break;
+                }
+            }
+
+            // Update active state
+            chapterElements.forEach((el, index) => {
+                if (index === activeIndex) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+        }
+
+        // Update TOC active item
+        function updateTocActive(slideNum) {
+            const tocItems = document.querySelectorAll('.toc-item');
+            if (tocItems.length === 0) return;
+
+            let activeIndex = -1;
+            for (let i = 0; i < chapters.length; i++) {
+                const nextSlide = i + 1 < chapters.length ? chapters[i + 1].slide : Infinity;
+                if (slideNum >= chapters[i].slide && slideNum < nextSlide) {
+                    activeIndex = i;
+                    break;
+                }
+            }
+
+            tocItems.forEach((item, index) => {
+                if (index === activeIndex) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // Navigate to specific slide
+        function goToSlide(slideNum) {
+            if (slideNum < 1 || slideNum > totalSlides) return;
+            updateSlide(slideNum);
+        }
+
+        // Update display
+        function updateSlide(newSlide) {
+            if (newSlide < 1 || newSlide > totalSlides) return;
+
+            const current = document.querySelector('.slide.active');
+            const next = document.querySelector(`[data-slide="${newSlide}"]`);
+
+            if (current) {
+                current.classList.remove('active');
+                current.classList.add('exit');
+                setTimeout(() => current.classList.remove('exit'), 500);
+            }
+
+            if (next) {
+                next.classList.add('active');
+            }
+
+            currentSlide = newSlide;
+            document.getElementById('currentSlide').textContent = currentSlide;
+            document.getElementById('progressBar').style.width =
+                ((currentSlide / totalSlides) * 100) + '%';
+
+            updateChapterNav(currentSlide);
+            updateTocActive(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                case 'PageDown':
+                    e.preventDefault();
+                    updateSlide(currentSlide + 1);
+                    break;
+                case 'ArrowLeft':
+                case 'PageUp':
+                    e.preventDefault();
+                    updateSlide(currentSlide - 1);
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    updateSlide(1);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    updateSlide(totalSlides);
+                    break;
+                case 'Escape':
+                    // Close TOC if open
+                    const tocPanel = document.getElementById('tocPanel');
+                    if (tocPanel && tocPanel.classList.contains('active')) {
+                        tocPanel.classList.remove('active');
+                        document.getElementById('tocIcon').style.display = 'flex';
+                    }
+                    break;
+            }
+        });
+
+        // Touch navigation
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    updateSlide(currentSlide + 1);
+                } else {
+                    updateSlide(currentSlide - 1);
+                }
+            }
+        });
+
+        // Fullscreen toggle
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // TOC Icon click handler
+        const tocIcon = document.getElementById('tocIcon');
+        const tocPanel = document.getElementById('tocPanel');
+        const tocClose = document.getElementById('tocClose');
+
+        if (tocIcon && tocPanel) {
+            tocIcon.addEventListener('click', () => {
+                tocPanel.classList.add('active');
+                tocIcon.style.display = 'none';
+            });
+        }
+
+        if (tocClose && tocPanel) {
+            tocClose.addEventListener('click', () => {
+                tocPanel.classList.remove('active');
+                tocIcon.style.display = 'flex';
+            });
+        }
+
+        // Chapter navigation click handlers
+        document.querySelectorAll('.chapter-nav .chapter').forEach((chapter) => {
+            chapter.addEventListener('click', () => {
+                const targetSlide = parseInt(chapter.getAttribute('data-slide'));
+                if (targetSlide && targetSlide > 0) {
+                    goToSlide(targetSlide);
+                }
+            });
+        });
+
+        // TOC item click handlers
+        document.querySelectorAll('.toc-item').forEach((item) => {
+            item.addEventListener('click', () => {
+                const targetSlide = parseInt(item.getAttribute('data-slide'));
+                if (targetSlide && targetSlide > 0) {
+                    goToSlide(targetSlide);
+                    // Close TOC after navigation
+                    tocPanel.classList.remove('active');
+                    tocIcon.style.display = 'flex';
+                }
+            });
+        });
+
+        // Initialize
+        document.getElementById('totalSlides').textContent = totalSlides;
+        updateSlide(1);
+
+        // Render LaTeX math with KaTeX
+        function renderMath() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "\\(", right: "\\)", display: false}
+                ],
+                throwOnError: false,
+                errorColor: '#cc0000',
+                strict: false
+            });
+        }
+    </script>
+</body>
+</html>
