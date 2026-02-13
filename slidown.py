@@ -621,13 +621,13 @@ class HTMLPresentationRenderer:
     """Render slides to HTML presentation"""
 
     def __init__(self, theme: str = 'tech', footer: Optional[str] = None,
-                 enable_chapter_nav: bool = True, chapter_level: int = 1):
+                 enable_chapter_nav: bool = True, chapter_level: int = 3):
         """
         Args:
             theme: Theme name (tech/cyberpunk, clean/fresh, corporate)
             footer: Optional footer text to display on each slide
             enable_chapter_nav: Enable chapter navigation bar
-            chapter_level: Heading level to use for chapters (1-6)
+            chapter_level: Heading level to use for chapters (1-6, default: 2)
         """
         self.theme = theme
         self.footer = footer
@@ -664,11 +664,12 @@ class HTMLPresentationRenderer:
         slides_html = self._generate_slides(slides)
         css = self._get_css()
 
-        # Extract chapters for navigation
-        chapters = self._extract_chapters(slides)
-        chapter_nav_html = self._generate_chapter_nav(chapters) if self.enable_chapter_nav else ''
+        # Extract chapters for navigation (returns two lists: nav and toc)
+        nav_chapters, toc_chapters = self._extract_chapters(slides)
+        chapter_nav_html = self._generate_chapter_nav(nav_chapters, toc_chapters) if self.enable_chapter_nav else ''
 
-        js = self._get_js(len(slides), chapters)
+        # Use nav_chapters for JavaScript (progress bar tracking)
+        js = self._get_js(len(slides), nav_chapters)
 
         # Get actual theme name
         actual_theme = self.theme_map.get(self.theme, 'tech')
@@ -737,103 +738,114 @@ class HTMLPresentationRenderer:
 </html>
 """
 
-    def _extract_chapters(self, slides: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Extract chapters based on chapter_level parameter (flattened structure)
+    def _extract_chapters(self, slides: List[Dict[str, Any]]) -> tuple:
+        """Extract chapters for both navigation bar and TOC.
 
         Returns:
-            List of chapter dicts with 'title', 'slide_number', and 'level'
+            tuple: (nav_chapters, toc_chapters)
+                - nav_chapters: Used for bottom progress bar (filtered by chapter_level)
+                - toc_chapters: Used for TOC panel (all heading levels 1-5)
         """
-        chapters = []
-        seen_titles = set()
+        nav_chapters = []  # Progress bar chapters (filtered by chapter_level)
+        toc_chapters = []  # TOC chapters (all levels 1-5)
+        seen_nav_titles = set()
+        seen_toc_titles = set()
 
         for i, slide in enumerate(slides):
             slide_num = i + 1
-            title = slide.get('title')
-
-            # Use original_title for paginated slides
-            original_title = slide.get('original_title', title)
-
-            # Skip if no title
-            if not original_title:
-                continue
 
             # Skip title slide
             if slide.get('is_title_slide'):
                 continue
 
-            # Parse the content to determine heading level
-            content = slide.get('content', '')
+            # Extract ALL headings from this slide's raw lines
             raw_lines = slide.get('raw_lines', [])
 
-            # Check raw lines for heading level
-            heading_level = None
             for line in raw_lines:
                 stripped = line.strip()
+                heading_level = None
+                heading_text = None
+
+                # Detect heading level and extract text
                 if stripped.startswith('# ') and not stripped.startswith('##'):
                     heading_level = 1
-                    break
+                    heading_text = stripped[2:].strip()
                 elif stripped.startswith('## ') and not stripped.startswith('###'):
                     heading_level = 2
-                    break
-                elif stripped.startswith('### '):
+                    heading_text = stripped[3:].strip()
+                elif stripped.startswith('### ') and not stripped.startswith('####'):
                     heading_level = 3
-                    break
+                    heading_text = stripped[4:].strip()
+                elif stripped.startswith('#### ') and not stripped.startswith('#####'):
+                    heading_level = 4
+                    heading_text = stripped[5:].strip()
+                elif stripped.startswith('##### ') and not stripped.startswith('######'):
+                    heading_level = 5
+                    heading_text = stripped[6:].strip()
 
-            # If we can't determine from raw lines, try HTML
-            if heading_level is None:
-                if '<h1>' in content or '<h1 ' in content:
-                    heading_level = 1
-                elif '<h2>' in content or '<h2 ' in content:
-                    heading_level = 2
-                elif '<h3>' in content or '<h3 ' in content:
-                    heading_level = 3
+                # If we found a heading, add it to the appropriate lists
+                if heading_level and heading_text:
+                    chapter_data = {
+                        'title': heading_text,
+                        'slide_number': slide_num,
+                        'level': heading_level
+                    }
 
-            # Default to chapter_level if we still can't determine
-            if heading_level is None:
-                heading_level = self.chapter_level
+                    # 1. TOC: Include all headings level 1-5 (complete outline)
+                    if 1 <= heading_level <= 5 and heading_text not in seen_toc_titles:
+                        toc_chapters.append(chapter_data.copy())
+                        seen_toc_titles.add(heading_text)
 
-            # Only include headings at or below chapter_level
-            if heading_level <= self.chapter_level and original_title not in seen_titles:
-                chapters.append({
-                    'title': original_title,
-                    'slide_number': slide_num,
-                    'level': heading_level
-                })
-                seen_titles.add(original_title)
+                    # 2. Navigation bar: Only include headings <= chapter_level
+                    if heading_level <= self.chapter_level and heading_text not in seen_nav_titles:
+                        nav_chapters.append(chapter_data.copy())
+                        seen_nav_titles.add(heading_text)
 
-        return chapters
+        return nav_chapters, toc_chapters
 
-    def _generate_chapter_nav(self, chapters: List[Dict[str, Any]]) -> str:
-        """Generate single-tier flattened chapter navigation HTML and TOC panel"""
-        if not chapters:
+    def _generate_chapter_nav(self, nav_chapters: List[Dict[str, Any]], toc_chapters: List[Dict[str, Any]]) -> str:
+        """Generate chapter navigation HTML and TOC panel.
+
+        Args:
+            nav_chapters: Chapters for bottom progress bar (filtered by chapter_level)
+            toc_chapters: All chapters for TOC panel (levels 1-5)
+
+        Returns:
+            str: Combined HTML for both components
+        """
+        if not nav_chapters and not toc_chapters:
             return ''
 
-        # Generate progress bar navigation (truncated titles)
-        nav_items = []
-        for chapter in chapters:
-            title = html.escape(chapter['title'])
-            # Truncate long titles for progress bar
-            display_title = title[:17] + '...' if len(title) > 20 else title
+        # Generate progress bar navigation (truncated titles, simplified)
+        nav_html = ''
+        if nav_chapters:
+            nav_items = []
+            for chapter in nav_chapters:
+                title = html.escape(chapter['title'])
+                # Truncate long titles for progress bar
+                display_title = title[:17] + '...' if len(title) > 20 else title
 
-            nav_items.append(
-                f'        <span class="chapter" data-level="{chapter["level"]}" data-slide="{chapter["slide_number"]}">{display_title}</span>'
-            )
+                nav_items.append(
+                    f'        <span class="chapter" data-level="{chapter["level"]}" data-slide="{chapter["slide_number"]}">{display_title}</span>'
+                )
 
-        nav_html = '\n        <span class="separator">|</span>\n'.join(nav_items)
+            nav_html = '\n        <span class="separator">|</span>\n'.join(nav_items)
 
-        # Generate TOC panel (full titles with hierarchy)
-        toc_items = []
-        for chapter in chapters:
-            title = html.escape(chapter['title'])
-            level = chapter['level']
+        # Generate TOC panel (full titles with complete hierarchy, all levels 1-5)
+        toc_content = ''
+        if toc_chapters:
+            toc_items = []
+            for chapter in toc_chapters:
+                title = html.escape(chapter['title'])
+                level = chapter['level']
 
-            toc_items.append(
-                f'        <div class="toc-item" data-level="{level}" data-slide="{chapter["slide_number"]}">\n'
-                f'            <span class="toc-title">{title}</span>\n'
-                f'        </div>'
-            )
+                toc_items.append(
+                    f'        <div class="toc-item" data-level="{level}" data-slide="{chapter["slide_number"]}">\n'
+                    f'            <span class="toc-title">{title}</span>\n'
+                    f'        </div>'
+                )
 
-        toc_content = '\n'.join(toc_items)
+            toc_content = '\n'.join(toc_items)
 
         return f'''    <!-- TOC Icon -->
     <div class="toc-icon" id="tocIcon" title="目录">
@@ -1534,6 +1546,19 @@ class HTMLPresentationRenderer:
             font-style: italic;
         }
 
+        .toc-item[data-level="4"] {
+            padding-left: 80px;
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        .toc-item[data-level="5"] {
+            padding-left: 100px;
+            font-size: 0.7rem;
+            color: #888;
+            font-style: italic;
+        }
+
         .toc-title {
             flex: 1;
             overflow: hidden;
@@ -2135,6 +2160,20 @@ class HTMLPresentationRenderer:
         .toc-item[data-level="3"] {
             padding-left: 60px;
             font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .toc-item[data-level="4"] {
+            padding-left: 80px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .toc-item[data-level="5"] {
+            padding-left: 100px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0.8;
             font-style: italic;
         }
 
@@ -2777,6 +2816,20 @@ class HTMLPresentationRenderer:
             font-style: italic;
         }
 
+        .toc-item[data-level="4"] {
+            padding-left: 80px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .toc-item[data-level="5"] {
+            padding-left: 100px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0.8;
+            font-style: italic;
+        }
+
         .toc-title {
             flex: 1;
             overflow: hidden;
@@ -3021,21 +3074,25 @@ class HTMLPresentationRenderer:
         }}
 
         // Chapter navigation click handlers
-        document.querySelectorAll('.chapter-nav .chapter').forEach((chapter, index) => {{
+        document.querySelectorAll('.chapter-nav .chapter').forEach((chapter) => {{
             chapter.addEventListener('click', () => {{
-                const targetSlide = chapters[index].slide;
-                goToSlide(targetSlide);
+                const targetSlide = parseInt(chapter.getAttribute('data-slide'));
+                if (targetSlide && targetSlide > 0) {{
+                    goToSlide(targetSlide);
+                }}
             }});
         }});
 
         // TOC item click handlers
-        document.querySelectorAll('.toc-item').forEach((item, index) => {{
+        document.querySelectorAll('.toc-item').forEach((item) => {{
             item.addEventListener('click', () => {{
-                const targetSlide = chapters[index].slide;
-                goToSlide(targetSlide);
-                // Close TOC after navigation
-                tocPanel.classList.remove('active');
-                tocIcon.style.display = 'flex';
+                const targetSlide = parseInt(item.getAttribute('data-slide'));
+                if (targetSlide && targetSlide > 0) {{
+                    goToSlide(targetSlide);
+                    // Close TOC after navigation
+                    tocPanel.classList.remove('active');
+                    tocIcon.style.display = 'flex';
+                }}
             }});
         }});
 
@@ -3205,7 +3262,7 @@ def convert_file(input_path: str, output_path: str = None,
                 max_elements: int = 15,
                 show_page_numbers: bool = False,
                 enable_chapter_nav: bool = True,
-                chapter_level: int = 1,
+                chapter_level: int = 3,
                 viewport_height: Optional[int] = None,
                 content_threshold: float = 0.8) -> bool:
     """Convert a single Markdown file to HTML presentation
@@ -3349,7 +3406,7 @@ Chapter Navigation:
   Bottom navigation bar showing all major chapters
   Click to jump between chapters
   Current chapter is highlighted
-  Configurable via --chapter-level (default: H1)
+  Configurable via --chapter-level (default: H2)
 
 Navigation:
   Use arrow keys (← →) or spacebar to navigate slides
@@ -3425,9 +3482,9 @@ Navigation:
     parser.add_argument(
         '--chapter-level',
         type=int,
-        default=1,
+        default=2,
         choices=[1, 2, 3, 4, 5, 6],
-        help='Heading level to use for chapters (default: 1 = H1)'
+        help='Heading level to use for chapters (default: 2 = H2)'
     )
 
     parser.add_argument(
