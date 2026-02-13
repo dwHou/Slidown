@@ -1,0 +1,29 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  发布前必读 / READ BEFORE RELEASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+在运行 ./scripts/release.sh 或上传到 PyPI 之前，请：
+
+1. 更新 pyproject.toml 中的邮箱地址
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   当前第 9 行:
+   {name = "Devonn Hou", email = "your.email@example.com"}
+
+   修改为你的真实邮箱:
+   {name = "Devonn Hou", email = "your-real-email@example.com"}
+
+2. 重新构建包（如果修改了 pyproject.toml）
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   rm -rf build/ dist/ *.egg-info/
+   source .venv_build/bin/activate
+   python -m build
+
+3. 准备好 PyPI API Token
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TestPyPI: https://test.pypi.org/manage/account/token/
+   PyPI:     https://pypi.org/manage/account/token/
+
+然后就可以运行:
+./scripts/release.sh
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
