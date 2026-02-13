@@ -740,6 +740,7 @@ class HTMLPresentationRenderer:
 
     def _extract_chapters(self, slides: List[Dict[str, Any]]) -> tuple:
         """Extract chapters for both navigation bar and TOC.
+        Protected against code blocks and HTML comments.
 
         Returns:
             tuple: (nav_chapters, toc_chapters)
@@ -750,6 +751,11 @@ class HTMLPresentationRenderer:
         toc_chapters = []  # TOC chapters (all levels 1-5)
         seen_nav_titles = set()
         seen_toc_titles = set()
+
+        # Track code blocks and HTML comments across ALL slides
+        # (they may span slide boundaries)
+        in_code_block = False
+        in_html_comment = False
 
         for i, slide in enumerate(slides):
             slide_num = i + 1
@@ -763,25 +769,42 @@ class HTMLPresentationRenderer:
 
             for line in raw_lines:
                 stripped = line.strip()
+
+                # Detect HTML comment boundaries
+                # Handle same-line comments: <!-- ... -->
+                if '<!--' in line and '-->' in line:
+                    # Single-line HTML comment, skip this line entirely
+                    continue
+                elif '<!--' in line:
+                    in_html_comment = True
+                    continue
+                elif '-->' in line:
+                    in_html_comment = False
+                    continue
+
+                # Skip content inside HTML comments
+                if in_html_comment:
+                    continue
+
+                # Detect code block boundaries (``` or ~~~)
+                if stripped.startswith('```') or stripped.startswith('~~~'):
+                    in_code_block = not in_code_block
+                    continue
+
+                # Skip content inside code blocks
+                if in_code_block:
+                    continue
+
                 heading_level = None
                 heading_text = None
 
-                # Detect heading level and extract text
-                if stripped.startswith('# ') and not stripped.startswith('##'):
-                    heading_level = 1
-                    heading_text = stripped[2:].strip()
-                elif stripped.startswith('## ') and not stripped.startswith('###'):
-                    heading_level = 2
-                    heading_text = stripped[3:].strip()
-                elif stripped.startswith('### ') and not stripped.startswith('####'):
-                    heading_level = 3
-                    heading_text = stripped[4:].strip()
-                elif stripped.startswith('#### ') and not stripped.startswith('#####'):
-                    heading_level = 4
-                    heading_text = stripped[5:].strip()
-                elif stripped.startswith('##### ') and not stripped.startswith('######'):
-                    heading_level = 5
-                    heading_text = stripped[6:].strip()
+                # Detect heading level and extract text using regex for accuracy
+                # Ensures proper Markdown heading format: ^#{1,6}\s+.+$
+                heading_match = re.match(r'^(#{1,6})\s+(.+)$', stripped)
+                if heading_match:
+                    level_str = heading_match.group(1)
+                    heading_level = len(level_str)
+                    heading_text = heading_match.group(2).strip()
 
                 # If we found a heading, add it to the appropriate lists
                 if heading_level and heading_text:

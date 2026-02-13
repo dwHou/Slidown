@@ -540,31 +540,49 @@
             <div class="feature-card">
                 <div class="feature-icon">🎨</div>
                 <h3 class="feature-title">Multi-Theme System</h3>
-                <p class="feature-desc">Choose from Tech/Cyberpunk, Clean, or Corporate themes. Each theme is carefully designed for different use cases.</p>
+                <p class="feature-desc">Choose from Tech/Cyberpunk, Clean/Fresh, or Corporate themes. Each theme is carefully designed for different use cases.</p>
             </div>
 
             <div class="feature-card">
-                <div class="feature-icon">📄</div>
+                <div class="feature-icon">🧠</div>
                 <h3 class="feature-title">Smart Pagination</h3>
-                <p class="feature-desc">Automatically splits content into slides based on heading levels. Intelligent content length detection with configurable thresholds.</p>
+                <p class="feature-desc">Automatically splits content based on viewport height and content threshold. Preserves code blocks, formulas, and tables.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">🧭</div>
-                <h3 class="feature-title">Chapter Navigation</h3>
-                <p class="feature-desc">Interactive navigation bar shows all chapters. Quick jump to any section with visual active highlighting.</p>
+                <h3 class="feature-title">Dual Navigation System</h3>
+                <p class="feature-desc">Chapter progress bar (bottom) + expandable TOC panel (top-left). Quick jump to any section with visual highlighting.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📐</div>
+                <h3 class="feature-title">LaTeX Math Formulas</h3>
+                <p class="feature-desc">Full support for inline ($...$) and block ($$...$$) math formulas. Powered by KaTeX rendering engine.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">💻</div>
                 <h3 class="feature-title">Syntax Highlighting</h3>
-                <p class="feature-desc">Beautiful code syntax highlighting powered by Pygments. Supports 100+ programming languages.</p>
+                <p class="feature-desc">Beautiful code syntax highlighting powered by Pygments. Supports 30+ programming languages.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">📱</div>
                 <h3 class="feature-title">Responsive Design</h3>
-                <p class="feature-desc">Works perfectly on desktop, tablet, and mobile devices. Single HTML file, no external dependencies.</p>
+                <p class="feature-desc">Works perfectly on desktop, tablet, and mobile devices. Single HTML file, all resources inlined.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Lightning Fast</h3>
+                <p class="feature-desc">Lightweight single-file output. No external dependencies. Runs perfectly offline.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🖼️</div>
+                <h3 class="feature-title">Flexible Image Handling</h3>
+                <p class="feature-desc">Auto-copy images to assets directory or preserve original paths. Choose based on your workflow.</p>
             </div>
         </div>
     </section>
@@ -605,26 +623,37 @@
 
         <div class="code-section">
             <h3 style="color: var(--primary); margin-bottom: 1rem;">1. Install Dependencies</h3>
-            <pre><code><span class="command">pip install markdown Pygments</span></code></pre>
+            <pre><code><span class="command">pip install markdown pygments</span></code></pre>
         </div>
 
         <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Basic Usage</h3>
-            <pre><code><span class="comment"># Convert Markdown to HTML presentation</span>
-<span class="command">python slidown.py input.md output.html</span>
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Clone and Convert</h3>
+            <pre><code><span class="comment"># Clone the repository</span>
+<span class="command">git clone https://github.com/dwHou/slidown.git</span>
+<span class="command">cd Slidown</span>
+
+<span class="comment"># Convert Markdown to HTML presentation (auto-generated timestamped folder)</span>
+<span class="command">python slidown.py your_notes.md</span>
 
 <span class="comment"># Choose a theme</span>
-<span class="command">python slidown.py input.md output.html --theme clean</span>
-
-<span class="comment"># Custom split level (H1 headings)</span>
-<span class="command">python slidown.py input.md output.html --split-level 1</span>
+<span class="command">python slidown.py your_notes.md --theme clean</span>
 
 <span class="comment"># Add custom footer</span>
-<span class="command">python slidown.py input.md output.html --footer "© 2026 Your Company"</span></code></pre>
+<span class="command">python slidown.py your_notes.md --footer "© 2026 Your Company"</span></code></pre>
         </div>
 
         <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Keyboard Navigation</h3>
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Output Structure</h3>
+            <pre><code><span class="comment"># Generated folder structure:</span>
+your_notes_20260213143025/
+├── presentation.html      <span class="comment"># Single-file presentation</span>
+├── assets/
+│   └── images/           <span class="comment"># Auto-copied images (if applicable)</span>
+└── README.txt            <span class="comment"># Usage instructions</span></code></pre>
+        </div>
+
+        <div class="code-section">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">4. Keyboard Navigation</h3>
             <ul style="color: var(--text-muted); line-height: 2;">
                 <li><strong style="color: var(--primary);">→</strong> or <strong style="color: var(--primary);">Space</strong> - Next slide</li>
                 <li><strong style="color: var(--primary);">←</strong> - Previous slide</li>
@@ -640,29 +669,166 @@
         <h2 class="section-title">Usage Examples</h2>
         <div class="examples-list">
             <div class="example-item">
-                <div class="example-title">Technical Workshop</div>
-                <div class="example-code">python slidown.py workshop.md --theme tech</div>
+                <div class="example-title">1. Basic Conversion</div>
+                <div class="example-code">python slidown.py lecture.md</div>
             </div>
 
             <div class="example-item">
-                <div class="example-title">Company Presentation (with footer)</div>
-                <div class="example-code">python slidown.py quarterly_review.md --theme corporate --footer "Confidential - Internal Use Only"</div>
+                <div class="example-title">2. Specify Theme and Output</div>
+                <div class="example-code">python slidown.py notes.md -o ~/Desktop/presentation --theme clean</div>
             </div>
 
             <div class="example-item">
-                <div class="example-title">Clean Documentation</div>
-                <div class="example-code">python slidown.py user_guide.md --theme clean --no-date</div>
+                <div class="example-title">3. Corporate Presentation (with custom footer)</div>
+                <div class="example-code">python slidown.py pitch.md --theme corporate --footer "Confidential - © 2026 Company Inc."</div>
             </div>
 
             <div class="example-item">
-                <div class="example-title">Smart Pagination (custom thresholds)</div>
-                <div class="example-code">python slidown.py long_tutorial.md --max-content-length 600 --show-page-numbers</div>
+                <div class="example-title">4. Adjust Pagination and Navigation</div>
+                <div class="example-code">python slidown.py doc.md --split-level 1 --chapter-level 3 --viewport-height 1080</div>
             </div>
 
             <div class="example-item">
-                <div class="example-title">Multi-Section Report</div>
-                <div class="example-code">python slidown.py annual_report.md --chapter-level 2 --theme corporate</div>
+                <div class="example-title">5. Preserve Image Paths (no copying)</div>
+                <div class="example-code">python slidown.py article.md --preserve-image-paths</div>
             </div>
+
+            <div class="example-item">
+                <div class="example-title">6. Smart Pagination (custom content length)</div>
+                <div class="example-code">python slidown.py long_tutorial.md --max-content-length 600 --max-elements 12</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Features Section -->
+    <section id="advanced">
+        <h2 class="section-title">Advanced Features</h2>
+
+        <div class="feature-card" style="margin-bottom: 2rem;">
+            <h3 class="feature-title">LaTeX Math Formulas</h3>
+            <p class="feature-desc" style="margin-bottom: 1rem;">Full support for mathematical notation using KaTeX.</p>
+            <div class="code-section">
+                <pre><code><span class="comment"># Inline math</span>
+The equation $E=mc^2$ is Einstein's mass-energy equivalence.
+
+<span class="comment"># Block math</span>
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$</code></pre>
+            </div>
+        </div>
+
+        <div class="feature-card" style="margin-bottom: 2rem;">
+            <h3 class="feature-title">Smart Pagination</h3>
+            <p class="feature-desc" style="margin-bottom: 1rem;">Automatically splits long content while preserving integrity.</p>
+            <ul style="color: var(--text-muted); line-height: 2;">
+                <li>Based on viewport height and content threshold</li>
+                <li>Protects code blocks, tables, and formulas from splitting</li>
+                <li>Configurable via <code>--viewport-height</code> and <code>--content-threshold</code></li>
+                <li>Ensures no scrolling required on each page</li>
+            </ul>
+        </div>
+
+        <div class="feature-card" style="margin-bottom: 2rem;">
+            <h3 class="feature-title">Dual Navigation System</h3>
+            <p class="feature-desc" style="margin-bottom: 1rem;">Two complementary navigation methods for better orientation.</p>
+            <ul style="color: var(--text-muted); line-height: 2;">
+                <li><strong style="color: var(--primary);">Chapter Progress Bar (bottom)</strong> - Shows major chapters (H1-H2 by default), current position highlighted</li>
+                <li><strong style="color: var(--primary);">TOC Panel (top-left)</strong> - Full document outline (H1-H5), expandable/collapsible</li>
+                <li>Configure chapter level with <code>--chapter-level</code> (1-6)</li>
+                <li>Disable with <code>--no-chapter-nav</code> if needed</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3 class="feature-title">Flexible Image Handling</h3>
+            <p class="feature-desc" style="margin-bottom: 1rem;">Choose between two image processing modes.</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                <div>
+                    <strong style="color: var(--primary);">Default Mode (Copy)</strong>
+                    <ul style="color: var(--text-muted); line-height: 2; margin-top: 0.5rem;">
+                        <li>Images copied to assets/images/</li>
+                        <li>Self-contained presentation</li>
+                        <li>Easy sharing and archiving</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong style="color: var(--primary);">Preserve Mode</strong>
+                    <ul style="color: var(--text-muted); line-height: 2; margin-top: 0.5rem;">
+                        <li>Keep original image paths</li>
+                        <li>No file copying</li>
+                        <li>HTML in same folder as Markdown</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Command Reference Section -->
+    <section id="commands">
+        <h2 class="section-title">Command Reference</h2>
+        <div class="code-section">
+            <table style="width: 100%; color: var(--text-muted); border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--primary);">
+                        <th style="text-align: left; padding: 1rem; color: var(--primary);">Parameter</th>
+                        <th style="text-align: left; padding: 1rem; color: var(--primary);">Default</th>
+                        <th style="text-align: left; padding: 1rem; color: var(--primary);">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>-o, --output</code></td>
+                        <td style="padding: 0.75rem;">Markdown dir</td>
+                        <td style="padding: 0.75rem;">Output base directory</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>-t, --theme</code></td>
+                        <td style="padding: 0.75rem;">tech</td>
+                        <td style="padding: 0.75rem;">Theme: tech/clean/corporate</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>-f, --footer</code></td>
+                        <td style="padding: 0.75rem;">None</td>
+                        <td style="padding: 0.75rem;">Custom footer text</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--split-level</code></td>
+                        <td style="padding: 0.75rem;">2</td>
+                        <td style="padding: 0.75rem;">Heading level for slide splitting (1-6)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--chapter-level</code></td>
+                        <td style="padding: 0.75rem;">2</td>
+                        <td style="padding: 0.75rem;">Chapter progress bar level (1-6)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--viewport-height</code></td>
+                        <td style="padding: 0.75rem;">900</td>
+                        <td style="padding: 0.75rem;">Viewport height in pixels</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--content-threshold</code></td>
+                        <td style="padding: 0.75rem;">0.8</td>
+                        <td style="padding: 0.75rem;">Content threshold (0-1)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--preserve-image-paths</code></td>
+                        <td style="padding: 0.75rem;">False</td>
+                        <td style="padding: 0.75rem;">Keep original image paths</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(0, 217, 255, 0.1);">
+                        <td style="padding: 0.75rem;"><code>--show-page-numbers</code></td>
+                        <td style="padding: 0.75rem;">False</td>
+                        <td style="padding: 0.75rem;">Show page numbers in titles</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.75rem;"><code>--no-chapter-nav</code></td>
+                        <td style="padding: 0.75rem;">False</td>
+                        <td style="padding: 0.75rem;">Disable chapter navigation bar</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </section>
 
