@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slidown - Transform Markdown into Beautiful HTML Presentations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #00D9FF;      /* Cyan - primary color */
+            --secondary: #0099FF;    /* Blue - secondary color */
+            --bg-dark: #0a0a0a;      /* Deep black - background */
+            --bg-card: #1a1a1a;      /* Deep gray - card background */
+            --text-light: #ffffff;   /* White - main text */
+            --text-muted: #888888;   /* Gray - secondary text */
+            --success: #00FF41;      /* Green - success state */
+            --warning: #FF6B35;      /* Orange - warning state */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Logo Styles */
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            letter-spacing: -1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .logo-sli {
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .logo-separator {
+            font-weight: 300;
+            color: #555;
+            padding: 0 0.1rem;
+        }
+
+        .logo-down {
+            font-weight: 300;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover .logo-sli {
+            color: #00FFFF;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            background:
+                linear-gradient(135deg, rgba(0, 217, 255, 0.03) 0%, rgba(0, 153, 255, 0.03) 100%),
+                var(--bg-dark);
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(0, 217, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero .logo {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .tagline-zh {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #00FFFF;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Section Styles */
+        section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Theme Preview */
+        .theme-previews {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .theme-preview {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 217, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .theme-preview:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+        .theme-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .theme-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .theme-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .theme-visual {
+            height: 200px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: 700;
+        }
+
+        .theme-tech {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .theme-clean {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+            color: #0066cc;
+        }
+
+        .theme-corporate {
+            background: linear-gradient(135deg, #1a3a5c 0%, #2c5282 100%);
+            color: #ffffff;
+        }
+
+        /* Code Block */
+        .code-section {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.1);
+            margin-top: 3rem;
+        }
+
+        pre {
+            background: #0d0d0d;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--success);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .command {
+            color: var(--primary);
+        }
+
+        .comment {
+            color: var(--text-muted);
+        }
+
+        /* Examples */
+        .examples-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .example-item {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .example-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .example-code {
+            background: #0d0d0d;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--success);
+            overflow-x: auto;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero .logo {
+                font-size: 2.5rem;
+            }
+
+            .nav-logo {
+                font-size: 1.2rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .tagline {
+                font-size: 1.2rem;
+            }
+
+            .tagline-zh {
+                font-size: 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .features-grid,
+            .theme-previews {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <div class="logo nav-logo">
+                <span class="logo-sli">Sli</span><span class="logo-separator">|</span><span class="logo-down">down</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#themes">Themes</a></li>
+                <li><a href="#quickstart">Quick Start</a></li>
+                <li><a href="#examples">Examples</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="logo">
+                <span class="logo-sli">Sli</span><span class="logo-separator">|</span><span class="logo-down">down</span>
+            </div>
+            <p class="tagline">Transform Markdown into Beautiful HTML Presentations</p>
+            <p class="tagline-zh">将 Markdown 笔记优雅转换为网页版演示文稿</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/dwHou/slidown" class="btn btn-primary">Get Started</a>
+                <a href="#quickstart" class="btn btn-secondary">View Documentation</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">↓</div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+        <h2 class="section-title">Core Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3 class="feature-title">Full Markdown Support</h3>
+                <p class="feature-desc">Complete support for all Markdown syntax including headings, lists, code blocks, tables, images, and more.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">Multi-Theme System</h3>
+                <p class="feature-desc">Choose from Tech/Cyberpunk, Clean, or Corporate themes. Each theme is carefully designed for different use cases.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3 class="feature-title">Smart Pagination</h3>
+                <p class="feature-desc">Automatically splits content into slides based on heading levels. Intelligent content length detection with configurable thresholds.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🧭</div>
+                <h3 class="feature-title">Chapter Navigation</h3>
+                <p class="feature-desc">Interactive navigation bar shows all chapters. Quick jump to any section with visual active highlighting.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">💻</div>
+                <h3 class="feature-title">Syntax Highlighting</h3>
+                <p class="feature-desc">Beautiful code syntax highlighting powered by Pygments. Supports 100+ programming languages.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3 class="feature-title">Responsive Design</h3>
+                <p class="feature-desc">Works perfectly on desktop, tablet, and mobile devices. Single HTML file, no external dependencies.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Themes Section -->
+    <section id="themes">
+        <h2 class="section-title">Choose Your Style</h2>
+        <div class="theme-previews">
+            <div class="theme-preview">
+                <div class="theme-header">
+                    <div class="theme-name">Tech / Cyberpunk</div>
+                    <div class="theme-desc">Dark background with neon colors. Perfect for technical presentations and coding demos.</div>
+                </div>
+                <div class="theme-visual theme-tech">TECH</div>
+            </div>
+
+            <div class="theme-preview">
+                <div class="theme-header">
+                    <div class="theme-name">Clean / Fresh</div>
+                    <div class="theme-desc">Bright and minimalist design. Ideal for documentation and long reading sessions.</div>
+                </div>
+                <div class="theme-visual theme-clean">CLEAN</div>
+            </div>
+
+            <div class="theme-preview">
+                <div class="theme-header">
+                    <div class="theme-name">Corporate</div>
+                    <div class="theme-desc">Professional business styling. Suitable for internal company presentations.</div>
+                </div>
+                <div class="theme-visual theme-corporate">CORP</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section id="quickstart">
+        <h2 class="section-title">Quick Start</h2>
+
+        <div class="code-section">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">1. Install Dependencies</h3>
+            <pre><code><span class="command">pip install markdown Pygments</span></code></pre>
+        </div>
+
+        <div class="code-section">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Basic Usage</h3>
+            <pre><code><span class="comment"># Convert Markdown to HTML presentation</span>
+<span class="command">python slidown.py input.md output.html</span>
+
+<span class="comment"># Choose a theme</span>
+<span class="command">python slidown.py input.md output.html --theme clean</span>
+
+<span class="comment"># Custom split level (H1 headings)</span>
+<span class="command">python slidown.py input.md output.html --split-level 1</span>
+
+<span class="comment"># Add custom footer</span>
+<span class="command">python slidown.py input.md output.html --footer "© 2026 Your Company"</span></code></pre>
+        </div>
+
+        <div class="code-section">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Keyboard Navigation</h3>
+            <ul style="color: var(--text-muted); line-height: 2;">
+                <li><strong style="color: var(--primary);">→</strong> or <strong style="color: var(--primary);">Space</strong> - Next slide</li>
+                <li><strong style="color: var(--primary);">←</strong> - Previous slide</li>
+                <li><strong style="color: var(--primary);">Home</strong> - First slide</li>
+                <li><strong style="color: var(--primary);">End</strong> - Last slide</li>
+                <li><strong style="color: var(--primary);">F11</strong> - Fullscreen mode</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Examples Section -->
+    <section id="examples">
+        <h2 class="section-title">Usage Examples</h2>
+        <div class="examples-list">
+            <div class="example-item">
+                <div class="example-title">Technical Workshop</div>
+                <div class="example-code">python slidown.py workshop.md --theme tech</div>
+            </div>
+
+            <div class="example-item">
+                <div class="example-title">Company Presentation (with footer)</div>
+                <div class="example-code">python slidown.py quarterly_review.md --theme corporate --footer "Confidential - Internal Use Only"</div>
+            </div>
+
+            <div class="example-item">
+                <div class="example-title">Clean Documentation</div>
+                <div class="example-code">python slidown.py user_guide.md --theme clean --no-date</div>
+            </div>
+
+            <div class="example-item">
+                <div class="example-title">Smart Pagination (custom thresholds)</div>
+                <div class="example-code">python slidown.py long_tutorial.md --max-content-length 600 --show-page-numbers</div>
+            </div>
+
+            <div class="example-item">
+                <div class="example-title">Multi-Section Report</div>
+                <div class="example-code">python slidown.py annual_report.md --chapter-level 2 --theme corporate</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="logo" style="font-size: 2rem; margin-bottom: 2rem;">
+                <span class="logo-sli">Sli</span><span class="logo-separator">|</span><span class="logo-down">down</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dwHou/slidown">GitHub</a>
+                <a href="https://github.com/dwHou/slidown/blob/master/README.md">Documentation</a>
+                <a href="https://github.com/dwHou/slidown/blob/master/CHANGELOG.md">Changelog</a>
+                <a href="https://github.com/dwHou/slidown/issues">Report Issue</a>
+            </div>
+            <div class="copyright">
+                © 2026 Slidown. Made with ❤️ by Devonn Hou. Released under MIT License.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

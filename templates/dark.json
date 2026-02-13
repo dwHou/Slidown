@@ -1,0 +1,16 @@
+{
+  "name": "Dark",
+  "background": [30, 30, 30],
+  "title_color": [100, 200, 255],
+  "text_color": [230, 230, 230],
+  "accent_color": [0, 149, 255],
+  "code_bg": [45, 45, 45],
+  "code_text": [200, 200, 200],
+  "font_title": "Arial",
+  "font_body": "Arial",
+  "font_code": "Courier New",
+  "title_size": 32,
+  "heading_size": 24,
+  "body_size": 14,
+  "code_size": 11
+}
