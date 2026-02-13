@@ -1197,6 +1197,26 @@ class HTMLPresentationRenderer:
             color: var(--text-secondary);
         }
 
+        /* Blockquote headings - prevent oversized fonts */
+        blockquote h1 { font-size: 1.2rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h2 { font-size: 1.1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h3 { font-size: 1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h4 { font-size: 0.95rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h5 { font-size: 0.9rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h6 { font-size: 0.85rem !important; font-weight: 600; margin: 0.5em 0; }
+
+        /* Blockquote heading colors */
+        blockquote h1,
+        blockquote h2,
+        blockquote h3,
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            color: var(--cyan);
+            font-style: normal;
+            text-shadow: none;
+        }
+
         /* Horizontal rule */
         hr {
             border: none;
@@ -1858,6 +1878,29 @@ class HTMLPresentationRenderer:
             color: var(--text-secondary);
         }
 
+        /* Blockquote headings - prevent oversized fonts */
+        blockquote h1 { font-size: 1.2rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h2 { font-size: 1.1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h3 { font-size: 1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            font-size: 0.95rem !important;
+            font-weight: 600;
+            margin: 0.5em 0;
+        }
+
+        /* Blockquote heading colors */
+        blockquote h1,
+        blockquote h2,
+        blockquote h3,
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            color: var(--secondary);
+            font-style: normal;
+        }
+
         /* Horizontal rule */
         hr {
             border: none;
@@ -2493,6 +2536,29 @@ class HTMLPresentationRenderer:
             margin: 16px 0;
             font-style: italic;
             color: var(--text-secondary);
+        }
+
+        /* Blockquote headings - prevent oversized fonts */
+        blockquote h1 { font-size: 1.2rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h2 { font-size: 1.1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h3 { font-size: 1rem !important; font-weight: 600; margin: 0.5em 0; }
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            font-size: 0.95rem !important;
+            font-weight: 600;
+            margin: 0.5em 0;
+        }
+
+        /* Blockquote heading colors */
+        blockquote h1,
+        blockquote h2,
+        blockquote h3,
+        blockquote h4,
+        blockquote h5,
+        blockquote h6 {
+            color: var(--secondary);
+            font-style: normal;
         }
 
         /* Horizontal rule */

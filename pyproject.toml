@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slidown"
+version = "1.0.0"
+authors = [
+    {name = "Devonn Hou", email = "your.email@example.com"}
+]
+description = "Transform Markdown into Beautiful HTML Presentations"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Topic :: Documentation",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+keywords = ["markdown", "presentation", "slides", "html", "converter", "slideshow", "latex", "katex"]
+dependencies = [
+    "markdown>=3.4.1",
+    "Pygments>=2.15.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dwHou/slidown"
+Repository = "https://github.com/dwHou/slidown"
+Issues = "https://github.com/dwHou/slidown/issues"
+Changelog = "https://github.com/dwHou/slidown/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/dwHou/slidown/blob/main/README.md"
+
+[project.scripts]
+slidown = "slidown:main"
+
+[tool.setuptools]
+py-modules = ["slidown"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["slidown*", "templates*", "utils*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.css", "*.html"]

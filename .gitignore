@@ -30,12 +30,19 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# PyPI release files
+scripts/__pycache__/
 
 # Virtual environments
 venv/
 ENV/
 env/
 .venv
+.venv_build/
+test_env/
+final_test/
 
 # IDE
 .vscode/
