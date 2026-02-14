@@ -519,9 +519,15 @@
             </div>
             <p class="tagline">Transform Markdown into Beautiful HTML Presentations</p>
             <p class="tagline-zh">将 Markdown 笔记优雅转换为网页版演示文稿</p>
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                <img src="https://img.shields.io/pypi/v/slidown-md.svg?color=00D9FF&style=for-the-badge" alt="PyPI version" style="height: 28px;">
+                <img src="https://img.shields.io/pypi/pyversions/slidown-md.svg?color=0099FF&style=for-the-badge" alt="Python versions" style="height: 28px;">
+                <img src="https://img.shields.io/github/license/dwHou/slidown.svg?color=00FF41&style=for-the-badge" alt="License" style="height: 28px;">
+            </div>
             <div class="cta-buttons">
-                <a href="https://github.com/dwHou/slidown" class="btn btn-primary">Get Started</a>
-                <a href="#quickstart" class="btn btn-secondary">View Documentation</a>
+                <a href="https://pypi.org/project/slidown-md/" class="btn btn-primary">Install from PyPI</a>
+                <a href="https://github.com/dwHou/slidown" class="btn btn-secondary">View on GitHub</a>
+                <a href="#quickstart" class="btn btn-secondary">Documentation</a>
             </div>
         </div>
         <div class="scroll-indicator">↓</div>
@@ -621,29 +627,31 @@
     <section id="quickstart">
         <h2 class="section-title">Quick Start</h2>
 
-        <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">1. Install Dependencies</h3>
-            <pre><code><span class="command">pip install markdown pygments</span></code></pre>
+        <div class="code-section" style="background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, rgba(0, 153, 255, 0.05) 100%); border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(0, 217, 255, 0.2);">
+            <h3 style="color: var(--primary); margin-bottom: 1rem; font-size: 1.5rem;">⚡ Install from PyPI (Recommended)</h3>
+            <pre><code><span class="command">pip install slidown-md</span></code></pre>
+            <p style="color: var(--text-muted); margin-top: 1rem; line-height: 1.8;">
+                <strong style="color: var(--success);">✓</strong> Simple one-line installation<br>
+                <strong style="color: var(--success);">✓</strong> Global <code>slidown</code> command available<br>
+                <strong style="color: var(--success);">✓</strong> Auto-installs all dependencies<br>
+                <strong style="color: var(--success);">✓</strong> Easy to update with <code style="color: var(--primary);">pip install --upgrade slidown-md</code>
+            </p>
         </div>
 
         <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Clone and Convert</h3>
-            <pre><code><span class="comment"># Clone the repository</span>
-<span class="command">git clone https://github.com/dwHou/slidown.git</span>
-<span class="command">cd Slidown</span>
-
-<span class="comment"># Convert Markdown to HTML presentation (auto-generated timestamped folder)</span>
-<span class="command">python slidown.py your_notes.md</span>
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">1. Basic Usage</h3>
+            <pre><code><span class="comment"># Convert Markdown to HTML presentation</span>
+<span class="command">slidown your_notes.md</span>
 
 <span class="comment"># Choose a theme</span>
-<span class="command">python slidown.py your_notes.md --theme clean</span>
+<span class="command">slidown your_notes.md --theme clean</span>
 
 <span class="comment"># Add custom footer</span>
-<span class="command">python slidown.py your_notes.md --footer "© 2026 Your Company"</span></code></pre>
+<span class="command">slidown your_notes.md --footer "© 2026 Your Company"</span></code></pre>
         </div>
 
         <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Output Structure</h3>
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Output Structure</h3>
             <pre><code><span class="comment"># Generated folder structure:</span>
 your_notes_20260213143025/
 ├── presentation.html      <span class="comment"># Single-file presentation</span>
@@ -653,7 +661,7 @@ your_notes_20260213143025/
         </div>
 
         <div class="code-section">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">4. Keyboard Navigation</h3>
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Keyboard Navigation</h3>
             <ul style="color: var(--text-muted); line-height: 2;">
                 <li><strong style="color: var(--primary);">→</strong> or <strong style="color: var(--primary);">Space</strong> - Next slide</li>
                 <li><strong style="color: var(--primary);">←</strong> - Previous slide</li>
@@ -661,6 +669,17 @@ your_notes_20260213143025/
                 <li><strong style="color: var(--primary);">End</strong> - Last slide</li>
                 <li><strong style="color: var(--primary);">F11</strong> - Fullscreen mode</li>
             </ul>
+        </div>
+
+        <div class="code-section" style="background: var(--bg-card); border: 1px solid rgba(0, 217, 255, 0.2);">
+            <h3 style="color: var(--text-muted); margin-bottom: 1rem;">Alternative: Install from Source (for developers)</h3>
+            <pre><code><span class="comment"># Clone the repository</span>
+<span class="command">git clone https://github.com/dwHou/slidown.git</span>
+<span class="command">cd Slidown</span>
+<span class="command">pip install markdown pygments</span>
+
+<span class="comment"># Run with Python script</span>
+<span class="command">python slidown.py your_notes.md</span></code></pre>
         </div>
     </section>
 
@@ -670,34 +689,38 @@ your_notes_20260213143025/
         <div class="examples-list">
             <div class="example-item">
                 <div class="example-title">1. Basic Conversion</div>
-                <div class="example-code">python slidown.py lecture.md</div>
+                <div class="example-code">slidown lecture.md</div>
             </div>
 
             <div class="example-item">
                 <div class="example-title">2. Specify Theme and Output</div>
-                <div class="example-code">python slidown.py notes.md -o ~/Desktop/presentation --theme clean</div>
+                <div class="example-code">slidown notes.md -o ~/Desktop/presentation --theme clean</div>
             </div>
 
             <div class="example-item">
                 <div class="example-title">3. Corporate Presentation (with custom footer)</div>
-                <div class="example-code">python slidown.py pitch.md --theme corporate --footer "Confidential - © 2026 Company Inc."</div>
+                <div class="example-code">slidown pitch.md --theme corporate --footer "Confidential - © 2026 Company Inc."</div>
             </div>
 
             <div class="example-item">
                 <div class="example-title">4. Adjust Pagination and Navigation</div>
-                <div class="example-code">python slidown.py doc.md --split-level 1 --chapter-level 3 --viewport-height 1080</div>
+                <div class="example-code">slidown doc.md --split-level 1 --chapter-level 3 --viewport-height 1080</div>
             </div>
 
             <div class="example-item">
                 <div class="example-title">5. Preserve Image Paths (no copying)</div>
-                <div class="example-code">python slidown.py article.md --preserve-image-paths</div>
+                <div class="example-code">slidown article.md --preserve-image-paths</div>
             </div>
 
             <div class="example-item">
                 <div class="example-title">6. Smart Pagination (custom content length)</div>
-                <div class="example-code">python slidown.py long_tutorial.md --max-content-length 600 --max-elements 12</div>
+                <div class="example-code">slidown long_tutorial.md --max-content-length 600 --max-elements 12</div>
             </div>
         </div>
+        <p style="text-align: center; color: var(--text-muted); margin-top: 2rem; font-size: 0.95rem;">
+            <strong style="color: var(--primary);">Note:</strong> These examples use the <code style="color: var(--success);">slidown</code> command (PyPI installation).
+            If using the source version, replace <code style="color: var(--success);">slidown</code> with <code style="color: var(--success);">python slidown.py</code>
+        </p>
     </section>
 
     <!-- Advanced Features Section -->
@@ -839,6 +862,7 @@ $$</code></pre>
                 <span class="logo-sli">Sli</span><span class="logo-separator">|</span><span class="logo-down">down</span>
             </div>
             <div class="footer-links">
+                <a href="https://pypi.org/project/slidown-md/">PyPI</a>
                 <a href="https://github.com/dwHou/slidown">GitHub</a>
                 <a href="https://github.com/dwHou/slidown/blob/master/README.md">Documentation</a>
                 <a href="https://github.com/dwHou/slidown/blob/master/CHANGELOG.md">Changelog</a>
