@@ -128,8 +128,55 @@ class MarkdownSlideParser:
 
         return self.parse_content(content)
 
+    def _detect_min_heading_level(self, content: str) -> int:
+        """Auto-detect the minimum (highest) heading level in the document
+
+        Args:
+            content: Markdown content
+
+        Returns:
+            Minimum heading level (1-6), or the current split_level if no headings found
+        """
+        lines = content.split('\n')
+        min_level = 7  # Start with impossible level
+        in_code_block = False
+
+        for line in lines:
+            # Skip code blocks
+            if line.strip().startswith('```'):
+                in_code_block = not in_code_block
+                continue
+
+            if in_code_block:
+                continue
+
+            # Match heading pattern: # to ######
+            # Must be at start of line (no leading whitespace) and followed by space
+            match = re.match(r'^(#{1,6})\s+.+$', line)
+            if match:
+                level = len(match.group(1))
+                if level < min_level:
+                    min_level = level
+
+        # If no headings found, return current split_level
+        return min_level if min_level <= 6 else self.split_level
+
     def parse_content(self, content: str) -> List[Dict[str, Any]]:
         """Parse Markdown content into slides"""
+        # Auto-detect minimum heading level if split_level is not explicitly overridden
+        detected_level = self._detect_min_heading_level(content)
+
+        # Use detected level if it's different from default (2) and no headings match split_level
+        if self.split_level == 2 and detected_level != 2:
+            # Check if any headings match the current split_level
+            split_pattern_test = rf'^#{{{self.split_level}}}\s+.+$'
+            has_matching_headings = any(re.match(split_pattern_test, line) for line in content.split('\n'))
+
+            if not has_matching_headings:
+                # No H2 found, use detected minimum level
+                self.split_level = detected_level
+                print(f"  Auto-detected chapter level: H{detected_level}")
+
         # Split by heading level
         split_pattern = rf'^(#{{{self.split_level}}})\s+(.+)$'
 
@@ -392,6 +439,7 @@ class MarkdownSlideParser:
         2. Tables
         3. Display math ($$...$$)
         4. Lines with inline math ($...$)
+        5. Top-level heading boundaries (split_level) - NEVER merge content across these
         """
         lines = slide['raw_lines']
         title = slide['title']
@@ -408,9 +456,24 @@ class MarkdownSlideParser:
         table_lines = []
         math_block_lines = []
 
+        # Pattern to detect top-level headings (matching split_level)
+        # These should ALWAYS start a new chunk
+        top_level_heading_pattern = rf'^#{{{self.split_level}}}\s+.+$'
+
         i = 0
         while i < len(lines):
             line = lines[i]
+
+            # CRITICAL: Check for top-level heading FIRST (before any other logic)
+            # If we encounter a top-level heading and we already have content, force a new chunk
+            if not in_code_block and not in_display_math:
+                if re.match(top_level_heading_pattern, line) and current_chunk:
+                    # Save current chunk and start fresh
+                    chunks.append(current_chunk)
+                    current_chunk = []
+                    current_height = 0
+                    current_char_count = 0
+                    current_element_count = 0
 
             # 1. Track code blocks (don't split them)
             if line.strip().startswith('```'):
@@ -745,10 +808,10 @@ class HTMLPresentationRenderer:
         Returns:
             tuple: (nav_chapters, toc_chapters)
                 - nav_chapters: Used for bottom progress bar (filtered by chapter_level)
-                - toc_chapters: Used for TOC panel (all heading levels 1-5)
+                - toc_chapters: Used for TOC panel (all heading levels 1-6)
         """
         nav_chapters = []  # Progress bar chapters (filtered by chapter_level)
-        toc_chapters = []  # TOC chapters (all levels 1-5)
+        toc_chapters = []  # TOC chapters (all levels 1-6)
         seen_nav_titles = set()
         seen_toc_titles = set()
 
@@ -814,8 +877,8 @@ class HTMLPresentationRenderer:
                         'level': heading_level
                     }
 
-                    # 1. TOC: Include all headings level 1-5 (complete outline)
-                    if 1 <= heading_level <= 5 and heading_text not in seen_toc_titles:
+                    # 1. TOC: Include all headings level 1-6 (complete outline)
+                    if 1 <= heading_level <= 6 and heading_text not in seen_toc_titles:
                         toc_chapters.append(chapter_data.copy())
                         seen_toc_titles.add(heading_text)
 
@@ -831,7 +894,7 @@ class HTMLPresentationRenderer:
 
         Args:
             nav_chapters: Chapters for bottom progress bar (filtered by chapter_level)
-            toc_chapters: All chapters for TOC panel (levels 1-5)
+            toc_chapters: All chapters for TOC panel (levels 1-6)
 
         Returns:
             str: Combined HTML for both components
@@ -854,7 +917,7 @@ class HTMLPresentationRenderer:
 
             nav_html = '\n        <span class="separator">|</span>\n'.join(nav_items)
 
-        # Generate TOC panel (full titles with complete hierarchy, all levels 1-5)
+        # Generate TOC panel (full titles with complete hierarchy, all levels 1-6)
         toc_content = ''
         if toc_chapters:
             toc_items = []
@@ -1602,6 +1665,14 @@ class HTMLPresentationRenderer:
             font-style: italic;
         }
 
+        .toc-item[data-level="6"] {
+            padding-left: 120px;
+            font-size: 0.65rem;
+            color: #777;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
         .toc-title {
             flex: 1;
             overflow: hidden;
@@ -2240,6 +2311,14 @@ class HTMLPresentationRenderer:
             font-size: 0.7rem;
             color: var(--text-muted);
             opacity: 0.8;
+            font-style: italic;
+        }
+
+        .toc-item[data-level="6"] {
+            padding-left: 120px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.7;
             font-style: italic;
         }
 
@@ -2916,6 +2995,14 @@ class HTMLPresentationRenderer:
             font-size: 0.7rem;
             color: var(--text-muted);
             opacity: 0.8;
+            font-style: italic;
+        }
+
+        .toc-item[data-level="6"] {
+            padding-left: 120px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.7;
             font-style: italic;
         }
 
