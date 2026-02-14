@@ -106,10 +106,10 @@ OUTPUT_DIR=$(mktemp -d)
 slidown "$TEST_MD" -o "$OUTPUT_DIR" --theme tech > /dev/null 2>&1
 
 # 检查输出
-OUTPUT_HTML=$(find "$OUTPUT_DIR" -name "presentation.html" 2>/dev/null | head -1)
+OUTPUT_HTML=$(find "$OUTPUT_DIR" -name "*-slidown.html" 2>/dev/null | head -1)
 if [ -f "$OUTPUT_HTML" ]; then
     echo -e "${GREEN}✓ 功能测试通过${NC}"
-    echo -e "  生成文件: $(basename $(dirname "$OUTPUT_HTML"))/presentation.html"
+    echo -e "  生成文件: $(basename $(dirname "$OUTPUT_HTML"))/$(basename "$OUTPUT_HTML")"
 else
     echo -e "${RED}✗ 功能测试失败${NC}"
     rm -rf "$TEST_ENV" "$TEST_MD" "$OUTPUT_DIR"

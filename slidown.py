@@ -3323,14 +3323,15 @@ class ResourceManager:
     def create_readme(self):
         """Create README.txt with usage instructions"""
         readme_path = self.output_dir / 'README.txt'
-        content = """HTML Presentation
+        filename = self.input_path.stem
+        content = f"""HTML Presentation
 ==================
 
 This presentation was generated from Markdown using SlideDown
 
 Usage:
 ------
-1. Open presentation.html in a web browser
+1. Open {filename}-slidown.html in a web browser
 2. Use arrow keys (← →) or spacebar to navigate
 3. Press F11 for fullscreen mode
 
@@ -3343,7 +3344,7 @@ Navigation:
 
 Files:
 ------
-- presentation.html: Main presentation file
+- {filename}-slidown.html: Main presentation file
 - assets/images/: Image resources
 
 Tips:
@@ -3405,7 +3406,7 @@ def convert_file(input_path: str, output_path: str = None,
             base_dir = Path(output_path)
 
         output_dir = base_dir / folder_name
-        html_output_path = output_dir / 'presentation.html'
+        html_output_path = output_dir / f'{input_file.stem}-slidown.html'
 
         print(f"  Output directory: {output_dir}")
 

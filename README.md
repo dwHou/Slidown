@@ -83,13 +83,13 @@ slidown your_notes.md --theme corporate --footer "© 2026 Your Company"
 
 ```
 your_notes_20260213143025/
-├── presentation.html          # Self-contained presentation
+├── your_notes-slidown.html    # Self-contained presentation
 ├── assets/
 │   └── images/               # Image resources (default mode)
 └── README.txt                # Usage instructions
 ```
 
-Open `presentation.html` in your browser to view the presentation.
+Open `your_notes-slidown.html` in your browser to view the presentation.
 
 ---
 
@@ -190,7 +190,7 @@ Image Processing:
 
 ```bash
 slidown lecture.md
-# Output: lecture_20260213143025/presentation.html
+# Output: lecture_20260213143025/lecture-slidown.html
 ```
 
 </details>

@@ -83,13 +83,13 @@ slidown your_notes.md --theme corporate --footer "© 2026 Your Company"
 
 ```
 your_notes_20260213143025/
-├── presentation.html          # 自包含的演示文稿
+├── your_notes-slidown.html    # 自包含的演示文稿
 ├── assets/
 │   └── images/               # 图片资源(默认模式)
 └── README.txt                # 使用说明
 ```
 
-在浏览器中打开 `presentation.html` 即可查看演示文稿。
+在浏览器中打开 `your_notes-slidown.html` 即可查看演示文稿。
 
 ---
 
@@ -190,7 +190,7 @@ slidown INPUT [OPTIONS]
 
 ```bash
 slidown lecture.md
-# 输出:lecture_20260213143025/presentation.html
+# 输出:lecture_20260213143025/lecture-slidown.html
 ```
 
 </details>
