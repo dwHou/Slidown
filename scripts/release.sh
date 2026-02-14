@@ -76,7 +76,7 @@ echo "✓ 验证通过"
 
 echo ""
 echo -e "${GREEN}▶ 步骤 6/7: 本地测试安装${NC}"
-pip install --force-reinstall dist/slidown-${VERSION}-py3-none-any.whl > /dev/null 2>&1
+pip install --force-reinstall dist/slidown_md-${VERSION}-py3-none-any.whl > /dev/null 2>&1
 if slidown --help > /dev/null 2>&1; then
     echo "✓ 本地安装测试通过"
 else
