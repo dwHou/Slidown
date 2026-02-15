@@ -39,7 +39,7 @@ class MarkdownSlideParser:
         self.max_elements = max_elements
         self.show_page_numbers = show_page_numbers
         self.viewport_height = viewport_height or 900  # Default viewport height
-        self.content_threshold = content_threshold
+        self.content_threshold = 0.7  # More conservative: 70% instead of 80%
         self.max_height = int(self.viewport_height * self.content_threshold)
         self.md = markdown.Markdown(
             extensions=['fenced_code', 'tables', 'toc', 'nl2br'],
@@ -294,7 +294,8 @@ class MarkdownSlideParser:
         # Code blocks (estimate lines)
         if '<pre>' in element:
             code_lines = element.count('\n') + 1
-            return code_lines * 20 + 40  # 20px per line + 40px padding
+            # More conservative: higher minimum, more space per line, larger overhead
+            return max(250, code_lines * 25 + 100)  # 250px min, 25px/line + 100px overhead
 
         # Tables (estimate rows)
         if '<table>' in element:
@@ -306,8 +307,17 @@ class MarkdownSlideParser:
             # Try to extract height attribute
             height_match = re.search(r'height=["\']?(\d+)', element)
             if height_match:
-                return int(height_match.group(1))
-            return 300  # Default image height
+                height = int(height_match.group(1))
+            else:
+                height = 300  # Default image height
+
+            # Check for zoom/scale in style attribute
+            zoom_match = re.search(r'zoom:\s*(\d+)%', element)
+            if zoom_match:
+                zoom_factor = int(zoom_match.group(1)) / 100
+                height = int(height * zoom_factor)
+
+            return height
 
         # List items
         if '<li>' in element:
@@ -318,9 +328,9 @@ class MarkdownSlideParser:
         if '<p>' in element:
             text_content = re.sub(r'<[^>]+>', '', element)
             char_count = len(text_content)
-            # Assume ~80 chars per line, 24px per line
-            lines = max(1, char_count // 80)
-            return lines * 24 + 12  # 24px per line + 12px margin
+            # More conservative: 70 chars/line
+            lines = max(1, char_count // 70)
+            return lines * 26 + 20  # More realistic spacing
 
         # Blockquote
         if '<blockquote>' in element:
@@ -346,9 +356,19 @@ class MarkdownSlideParser:
                            content, flags=re.DOTALL)
 
         total_height = 0
+        has_code_blocks = False
         for element in elements:
             if element.strip():
                 total_height += self._estimate_element_height(element)
+                if '<pre>' in element:
+                    has_code_blocks = True
+
+        # Apply different safety coefficients based on content type
+        # Code-heavy slides need more breathing room
+        if has_code_blocks:
+            adjusted_height = total_height * 1.5  # 50% buffer for code-heavy slides
+        else:
+            adjusted_height = total_height * 1.2  # 20% buffer for regular slides
 
         # Also check character count and element count as fallback
         text_content = re.sub(r'<[^>]+>', '', content)
@@ -361,7 +381,7 @@ class MarkdownSlideParser:
             len(re.findall(r'<table>', content))
         )
 
-        return (total_height > self.max_height or
+        return (adjusted_height > self.max_height or
                 char_count > self.max_content_length or
                 element_count > self.max_elements)
 
@@ -483,8 +503,9 @@ class MarkdownSlideParser:
                 else:
                     in_code_block = False
                     code_block_lines.append(line)
-                    # Estimate code block height
-                    code_height = len(code_block_lines) * 20 + 40
+                    # Estimate code block height with minimum 200px guarantee
+                    code_lines = len(code_block_lines)
+                    code_height = max(250, code_lines * 25 + 100)
 
                     # Check if adding code block exceeds limit
                     if current_height + code_height > self.max_height and current_chunk:
