@@ -114,6 +114,36 @@ class MarkdownSlideParser:
 
         return html
 
+    def _convert_mermaid_blocks(self, html_content: str) -> str:
+        """Convert <pre><code class="language-mermaid"> blocks to <div class="mermaid"> blocks.
+
+        The markdown library HTML-escapes content inside code blocks (e.g. > becomes &gt;).
+        Mermaid.js needs the raw diagram source text, so we unescape it here before
+        placing it inside the mermaid div.
+
+        Args:
+            html_content: HTML string that may contain fenced mermaid code blocks
+
+        Returns:
+            HTML string with mermaid code blocks replaced by .mermaid divs
+        """
+        import html as html_lib
+
+        pattern = r'<pre><code class="language-mermaid">(.*?)</code></pre>'
+
+        def replace_mermaid(match):
+            raw = html_lib.unescape(match.group(1))
+            raw = self._fix_mermaid_newlines(raw)
+            return f'<div class="mermaid">\n{raw}\n</div>'
+
+        return re.sub(pattern, replace_mermaid, html_content, flags=re.DOTALL)
+
+    def _fix_mermaid_newlines(self, mermaid_source: str) -> str:
+        """Replace literal \\n inside quoted node labels with <br/> for Mermaid htmlLabels rendering."""
+        def replace_in_quotes(match):
+            return match.group(0).replace('\\n', '<br/>')
+        return re.sub(r'"[^"]*"', replace_in_quotes, mermaid_source)
+
     def parse_file(self, filepath: str) -> List[Dict[str, Any]]:
         """Parse Markdown file into slides
 
@@ -242,6 +272,9 @@ class MarkdownSlideParser:
         # Restore math formulas after markdown processing
         content_html = self._restore_math(content_html)
 
+        # Convert mermaid fenced code blocks to .mermaid divs for Mermaid.js rendering
+        content_html = self._convert_mermaid_blocks(content_html)
+
         return {
             'title': title,
             'content': content_html,
@@ -290,6 +323,10 @@ class MarkdownSlideParser:
             return 60
         if '<h6>' in element or '<h6 ' in element:
             return 60
+
+        # Mermaid diagrams — treat as a fixed tall element (conservative estimate)
+        if 'class="mermaid"' in element:
+            return 300  # Diagrams are usually tall; conservative estimate
 
         # Code blocks (estimate lines)
         if '<pre>' in element:
@@ -360,7 +397,7 @@ class MarkdownSlideParser:
         for element in elements:
             if element.strip():
                 total_height += self._estimate_element_height(element)
-                if '<pre>' in element:
+                if '<pre>' in element or 'class="mermaid"' in element:
                     has_code_blocks = True
 
         # Apply different safety coefficients based on content type
@@ -378,7 +415,8 @@ class MarkdownSlideParser:
             len(re.findall(r'<p>', content)) +
             len(re.findall(r'<li>', content)) +
             len(re.findall(r'<pre>', content)) +
-            len(re.findall(r'<table>', content))
+            len(re.findall(r'<table>', content)) +
+            len(re.findall(r'class="mermaid"', content))
         )
 
         return (adjusted_height > self.max_height or
@@ -688,6 +726,9 @@ class MarkdownSlideParser:
             # Restore math formulas after markdown processing
             content_html = self._restore_math(content_html)
 
+            # Convert mermaid fenced code blocks to .mermaid divs for Mermaid.js rendering
+            content_html = self._convert_mermaid_blocks(content_html)
+
             split_slides.append({
                 'title': chunk_title,
                 'content': content_html,
@@ -818,6 +859,8 @@ class HTMLPresentationRenderer:
     <script>
 {js}
     </script>
+
+    {self._get_mermaid_script()}
 </body>
 </html>
 """
@@ -1202,6 +1245,19 @@ class HTMLPresentationRenderer:
             background: none;
             padding: 0;
             font-size: 1em;
+        }
+
+        /* Mermaid diagrams */
+        .mermaid {
+            max-width: 100%;
+            overflow-x: auto;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
         }
 
         /* Tables */
@@ -1898,6 +1954,19 @@ class HTMLPresentationRenderer:
             color: var(--text-primary);
         }
 
+        /* Mermaid diagrams */
+        .mermaid {
+            max-width: 100%;
+            overflow-x: auto;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
         /* Tables */
         table {
             width: 100%;
@@ -2558,6 +2627,19 @@ class HTMLPresentationRenderer:
             color: var(--text-primary);
         }
 
+        /* Mermaid diagrams */
+        .mermaid {
+            max-width: 100%;
+            overflow-x: auto;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
         /* Tables */
         table {
             width: 100%;
@@ -3093,6 +3175,63 @@ class HTMLPresentationRenderer:
                 height: 40px;
             }
         }'''
+
+    def _get_mermaid_theme(self) -> str:
+        """Return the Mermaid.js theme name that best matches the current Slidown theme."""
+        actual_theme = self.theme_map.get(self.theme, 'tech')
+        mapping = {
+            'tech': 'dark',
+            'clean': 'default',
+            'corporate': 'neutral',
+        }
+        return mapping.get(actual_theme, 'default')
+
+    def _get_mermaid_script(self) -> str:
+        """Return a standalone <script type="module"> block for Mermaid.js initialization using ELK layout."""
+        mermaid_theme = self._get_mermaid_theme()
+        return f"""
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
+
+mermaid.registerLayoutLoaders(elkLayouts);
+
+mermaid.initialize({{
+    startOnLoad: false,
+    theme: '{mermaid_theme}',
+    securityLevel: 'loose',
+    layout: 'elk',
+    flowchart: {{
+        htmlLabels: true,
+    }},
+}});
+
+async function renderMermaidOnSlide(slideEl) {{
+    const diagrams = slideEl ? slideEl.querySelectorAll('.mermaid:not([data-processed])') : [];
+    if (diagrams.length > 0) {{
+        await mermaid.run({{ nodes: Array.from(diagrams) }});
+    }}
+}}
+
+document.addEventListener('DOMContentLoaded', () => {{
+    const active = document.querySelector('.slide.active') || document.querySelector('.slide');
+    if (active) renderMermaidOnSlide(active);
+}});
+
+const observer = new MutationObserver((mutations) => {{
+    for (const m of mutations) {{
+        if (m.type === 'attributes' && m.attributeName === 'class') {{
+            const el = m.target;
+            if (el.classList.contains('active')) {{
+                renderMermaidOnSlide(el);
+            }}
+        }}
+    }}
+}});
+document.querySelectorAll('.slide').forEach(slide => {{
+    observer.observe(slide, {{ attributes: true }});
+}});
+</script>"""
 
     def _get_js(self, total_slides: int, chapters: List[Dict[str, Any]]) -> str:
         """Get JavaScript for slide navigation with flattened chapters and TOC"""
